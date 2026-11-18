@@ -5,8 +5,9 @@ sebelum mengubah apa pun.
 
 ## 1. Pembagian kerja
 
-- Bayhaqy: `fplib.py`, `test_fplib.py`, Kasir Kantin, Presensi Kelas, README & repositori.
-- Sigit: Perpustakaan Mini, Keuangan Pribadi, Nilai Mahasiswa, laporan.
+- Seluruh kode dikerjakan dan dipahami bersama; kedua anggota harus bisa menjelaskan
+  bagian mana pun saat tanya jawab.
+- Pembagian bicara saat demo ada di `docs/NASKAH_DEMO.md`.
 - Perubahan `fplib.py` harus disetujui kedua anggota karena dipakai semua aplikasi.
 - Tulis pembagian final di tabel anggota pada README.md dan di laporan.
 
