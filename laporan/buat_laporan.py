@@ -148,7 +148,7 @@ GAMBAR_APLIKASI = {
     "Keuangan": "06_keuangan_pribadi.png",
     "Nilai": "07_nilai_mahasiswa.png",
 }
-LEBAR_GAMBAR_APLIKASI = 9.5
+LEBAR_GAMBAR_APLIKASI = 8.5
 
 PUSTAKA = [
     "Python Software Foundation. Functional Programming HOWTO. https://docs.python.org/3/howto/functional.html",
@@ -369,6 +369,31 @@ def gambar(doc, nama_file, keterangan, lebar_cm=13.0):
     tambah_teks(k, keterangan, 10, miring=True)
 
 
+def gambar_grid(doc, daftar, lebar_cm=7.6):
+    """Susun beberapa screenshot dalam tabel 2 kolom tanpa garis; tiap sel = gambar + keterangan."""
+    baris = [daftar[i:i + 2] for i in range(0, len(daftar), 2)]
+    t = doc.add_table(rows=len(baris), cols=2)
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for r, isi in enumerate(baris):
+        trPr = t.rows[r]._tr.get_or_add_trPr()
+        tak_pecah = OxmlElement("w:cantSplit")
+        tak_pecah.set(qn("w:val"), "true")
+        trPr.append(tak_pecah)
+        for c, (nama_file, keterangan) in enumerate(isi):
+            sel = t.cell(r, c)
+            p = sel.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.space_after = Pt(1)
+            p.add_run().add_picture(str(GAMBAR / nama_file), width=Cm(lebar_cm))
+            _nomor_gambar[0] += 1
+            k = sel.add_paragraph()
+            k.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            k.paragraph_format.space_after = Pt(6)
+            tambah_teks(k, f"Gambar {_nomor_gambar[0]}. ", 9, tebal=True)
+            tambah_teks(k, keterangan, 9, miring=True)
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+
+
 def nomor_halaman(section):
     p = section.footer.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -513,7 +538,21 @@ def bab_aplikasi(doc, data_matriks):
         p = paragraf(doc, sesudah=4)
         tambah_teks(p, f"Fungsi fplib ({len(dipakai)}): ", tebal=True)
         tambah_teks(p, ", ".join(f"`{f}`" for f in dipakai))
-        gambar(doc, GAMBAR_APLIKASI[label], f"Hasil menjalankan {berkas} di Google Colab.", LEBAR_GAMBAR_APLIKASI)
+
+
+
+def bab_bukti_jalan(doc):
+    judul(doc, "4.6 Hasil Menjalankan di Google Colab", 2)
+    paragraf(doc, "Tangkapan layar asli dari notebook Google Colab yang meng-clone repositori GitHub "
+                  "lalu menjalankan setiap aplikasi.", sesudah=4)
+    gambar_grid(doc, [
+        (GAMBAR_APLIKASI["Kasir"], "kasir_kantin.py"),
+        (GAMBAR_APLIKASI["Presensi"], "presensi_kelas.py"),
+        (GAMBAR_APLIKASI["Perpus"], "perpustakaan_mini.py"),
+        (GAMBAR_APLIKASI["Keuangan"], "keuangan_pribadi.py"),
+        (GAMBAR_APLIKASI["Nilai"], "nilai_mahasiswa.py"),
+        ("10_mode_interaktif.png", "kasir_kantin.py --interaktif (X99 ditolak validasi)"),
+    ])
 
 
 def bab_matriks(doc, data_matriks):
@@ -564,9 +603,8 @@ def bab_pengujian(doc):
         ("Aplikasi", "Kelima aplikasi berjalan tanpa error dan angka kuncinya benar."),
         ("Mode interaktif", "Input pengguna disimulasikan; input salah ditolak `validasi`, input terputus tidak crash."),
     ], [4.5, 11.5])
-    gambar(doc, "08_pytest_awal.png", "Awal keluaran pytest -v di Google Colab (62 pengujian terkumpul).", 10.0)
     gambar(doc, "09_pytest_hasil_matriks.png",
-           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 10.0)
+           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 9.0)
 
 
 def bab_penutup(doc):
@@ -630,6 +668,7 @@ def main():
     bab_struktur(doc)
     bab_fungsi(doc, sumber, data_matriks)
     bab_aplikasi(doc, data_matriks)
+    bab_bukti_jalan(doc)
     bab_matriks(doc, data_matriks)
     bab_bukti(doc, data_matriks)
     bab_pengujian(doc)
