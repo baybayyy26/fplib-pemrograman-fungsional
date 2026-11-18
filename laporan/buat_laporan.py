@@ -55,6 +55,9 @@ LEBAR_TEKS = 14.0  # A4 21 cm - margin kiri 4 cm - kanan 3 cm
 SPASI = 1.5
 WARNA_KEPALA_TABEL = "DCE8DF"
 
+JUDUL = ("Perancangan Library Pemrograman Fungsional fplib.py",
+         "dan Penerapannya pada Lima Aplikasi Sederhana")
+
 PENJELASAN = {
     "pipe": (
         "Merangkai beberapa fungsi menjadi satu alur yang dijalankan dari kiri ke kanan, sehingga "
@@ -448,8 +451,8 @@ def sampul(doc):
     tengah = WD_ALIGN_PARAGRAPH.CENTER
     paragraf(doc, "LAPORAN TUGAS", 14, tebal=True, rata=tengah, sesudah=0)
     paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 14, tebal=True, rata=tengah, sesudah=24)
-    paragraf(doc, "Membangun Library Fungsional Sendiri:", 13, tebal=True, rata=tengah, sesudah=0)
-    paragraf(doc, "fplib.py untuk Lima Aplikasi", 13, tebal=True, rata=tengah, sesudah=42)
+    for i, baris in enumerate(JUDUL):
+        paragraf(doc, baris, 13, tebal=True, rata=tengah, sesudah=42 if i == len(JUDUL) - 1 else 0)
 
     logo = GAMBAR / "00_logo_umm.png"
     if logo.exists():
@@ -479,7 +482,8 @@ def bab_pendahuluan(doc):
     paragraf(doc, "Tugas ini meminta kelompok membuat satu library sendiri, `fplib.py`, yang berisi fungsi-fungsi "
                   "umum bergaya fungsional, lalu memakainya di lima aplikasi: Kasir Kantin, "
                   "Presensi Kelas, Perpustakaan Mini, Keuangan Pribadi, dan Nilai Mahasiswa. Setiap fungsi "
-                  "wajib dipakai oleh minimal tiga dari lima aplikasi.")
+                  "wajib dipakai oleh minimal tiga dari lima aplikasi. Nama fplib merupakan singkatan dari "
+                  "functional programming library.")
     judul(doc, "1.2 Tujuan", 2)
     for t in ("Menerapkan prinsip pemrograman fungsional (fungsi murni, fungsi tingkat tinggi, closure, "
               "komposisi) dalam sebuah library yang dapat dipakai ulang.",
@@ -678,9 +682,9 @@ def main():
     gaya.font.size = Pt(12)
     gaya.element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
 
-    doc.core_properties.title = "Laporan Tugas Pemrograman Fungsional — fplib.py"
+    doc.core_properties.title = " ".join(JUDUL)
     doc.core_properties.author = " & ".join(n for n, _, _ in IDENTITAS["anggota"])
-    doc.core_properties.subject = "Library fungsional untuk lima aplikasi"
+    doc.core_properties.subject = " ".join(JUDUL)
 
     sampul(doc)
     isi = doc.add_section(WD_SECTION.NEW_PAGE)
