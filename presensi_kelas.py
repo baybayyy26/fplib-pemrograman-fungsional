@@ -4,8 +4,11 @@ Kehadiran dan rekap per mahasiswa.
 
 Fungsi fplib yang dipakai: pipe, ambil, saring, kelompokkan, rata_rata.
 
-Jalankan:  python presensi_kelas.py
+Jalankan:  python presensi_kelas.py               (data contoh)
+           python presensi_kelas.py --interaktif  (isi presensi pertemuan baru)
 """
+
+import sys
 
 from fplib import pipe, ambil, saring, kelompokkan, rata_rata
 
@@ -70,12 +73,12 @@ tidak_memenuhi_syarat = saring(lambda r: r["persen"] < BATAS_MINIMAL)
 # ---------------------------------------------------------------------------
 # Tampilan
 # ---------------------------------------------------------------------------
-def main():
+def main(presensi=PRESENSI):
     print("=" * 60)
     print(" PRESENSI KELAS".center(60))
     print("=" * 60)
 
-    rekap = rekap_per_mahasiswa(PRESENSI)
+    rekap = rekap_per_mahasiswa(presensi)
     print("\nREKAP PER MAHASISWA")
     print(f"  {'NIM':<17}{'Nama':<8}{'Hadir':>6}{'Persen':>9}  Status")
     print("\n".join(ambil(
@@ -89,7 +92,7 @@ def main():
     print("\nKEHADIRAN PER PERTEMUAN")
     print("\n".join(ambil(
         lambda p: f"  Pertemuan {p['pertemuan']}: {p['persen']:5.1f}%"
-    )(rekap_per_pertemuan(PRESENSI))))
+    )(rekap_per_pertemuan(presensi))))
 
     kurang = tidak_memenuhi_syarat(rekap)
     print(f"\nRata-rata kehadiran kelas : {rata_rata('persen')(rekap):.1f}%")
@@ -97,5 +100,27 @@ def main():
     print("=" * 60)
 
 
+def tanya(pesan):
+    """Baca satu baris dari pengguna; akhir input (Ctrl+D / Ctrl+Z) dianggap baris kosong."""
+    try:
+        return input(pesan).strip()
+    except EOFError:
+        return ""
+
+
+def main_interaktif():
+    ke = max(ambil("pertemuan")(PRESENSI)) + 1
+    print(f"Isi presensi pertemuan {ke} (H/I/S/A, Enter kosong = H)")
+    baru = []
+    for nim, nama, _ in RIWAYAT:
+        status = tanya(f"  {nama:<6}: ").upper()[:1] or "H"
+        baru.append({"nim": nim, "nama": nama, "pertemuan": ke,
+                     "status": status if status in "HISA" else "A"})
+    main(PRESENSI + tuple(baru))
+
+
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()

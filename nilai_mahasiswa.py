@@ -5,8 +5,11 @@ Komponen nilai, nilai akhir, dan peringkat.
 Fungsi fplib yang dipakai: pipe, ambil, saring, cari, urutkan,
 jumlahkan, rata_rata, validasi.
 
-Jalankan:  python nilai_mahasiswa.py
+Jalankan:  python nilai_mahasiswa.py               (data contoh)
+           python nilai_mahasiswa.py --interaktif  (tambah nilai mahasiswa)
 """
+
+import sys
 
 from fplib import pipe, ambil, saring, cari, urutkan, jumlahkan, rata_rata, validasi
 
@@ -87,19 +90,19 @@ buat_peringkat = pipe(
 # ---------------------------------------------------------------------------
 # Tampilan
 # ---------------------------------------------------------------------------
-def main():
+def main(mahasiswa=MAHASISWA):
     print("=" * 64)
     print(" NILAI MAHASISWA".center(64))
     print("=" * 64)
 
-    ditolak = saring(lambda m: bool(cek_mahasiswa(m)))(MAHASISWA)
+    ditolak = saring(lambda m: bool(cek_mahasiswa(m)))(mahasiswa)
     if ditolak:
         print("\nDATA PERLU DIPERBAIKI")
         print("\n".join(ambil(
             lambda m: f"  {m['nim']} {m['nama']}: {', '.join(cek_mahasiswa(m))}"
         )(ditolak)))
 
-    peringkat = buat_peringkat(MAHASISWA)
+    peringkat = buat_peringkat(mahasiswa)
     if not peringkat:
         print("\nBelum ada data nilai yang valid.")
         return
@@ -123,5 +126,41 @@ def main():
     print("=" * 64)
 
 
+def tanya(pesan):
+    """Baca satu baris dari pengguna; akhir input (Ctrl+D / Ctrl+Z) dianggap baris kosong."""
+    try:
+        return input(pesan).strip()
+    except EOFError:
+        return ""
+
+
+def ke_angka(teks):
+    """Ubah teks menjadi angka; yang bukan angka menjadi -1 (ditolak validasi)."""
+    try:
+        angka = float(teks.replace(",", "."))
+    except ValueError:
+        return -1
+    return int(angka) if angka.is_integer() else angka
+
+
+def ke_mahasiswa(teks):
+    """'202410370110007 Gita 80 75 88' -> dict mahasiswa dengan komponen nilai."""
+    bagian = teks.split()
+    angka = (ambil(ke_angka)(bagian[-3:]) + [-1, -1, -1])[:3]
+    nama = " ".join(bagian[1:-3]) if len(bagian) >= 5 else (bagian[1] if len(bagian) > 1 else "-")
+    return {"nim": bagian[0], "nama": nama, "komponen": komponen(*angka)}
+
+
+def main_interaktif():
+    print("Format: nim nama tugas uts uas, mis. 202410370110007 Gita 80 75 88")
+    baris = []
+    while teks := tanya("Mahasiswa baru (Enter kosong = selesai): "):
+        baris.append(ke_mahasiswa(teks))
+    main(MAHASISWA + tuple(baris))
+
+
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()

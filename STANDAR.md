@@ -23,13 +23,17 @@ Setiap aplikasi dibagi tiga bagian dengan urutan tetap:
 
 1. **Data**: konstanta huruf besar, disimpan sebagai `tuple` (tidak bisa diubah).
 2. **Logika**: fungsi murni / rangkaian `pipe`, tanpa `print`.
-3. **Tampilan**: fungsi `main()`, satu-satunya tempat `print`.
+3. **Tampilan**: `main(data=...)` dan `main_interaktif()`, satu-satunya tempat `print` dan `input`.
+   `main` menerima data sebagai argumen, jadi mode contoh dan mode interaktif memakai logika yang sama.
 
 Diakhiri dengan:
 
 ```python
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()
 ```
 
 Dengan pola ini, logika bisa diuji di `test_fplib.py` tanpa menjalankan tampilan.

@@ -62,6 +62,13 @@ python perpustakaan_mini.py
 python keuangan_pribadi.py
 python nilai_mahasiswa.py
 
+# mode interaktif: data diketik sendiri lewat keyboard
+python kasir_kantin.py --interaktif
+python presensi_kelas.py --interaktif
+python perpustakaan_mini.py --interaktif
+python keuangan_pribadi.py --interaktif
+python nilai_mahasiswa.py --interaktif
+
 # atau semuanya sekaligus + pytest (untuk demo)
 python jalankan_semua.py           # tambahkan --jeda untuk berhenti di tiap aplikasi
 ```
@@ -69,7 +76,7 @@ python jalankan_semua.py           # tambahkan --jeda untuk berhenti di tiap apl
 ## Cara menguji
 
 ```bash
-pytest -v                          # 56 pengujian
+pytest -v                          # 62 pengujian
 python tools/matriks.py --cek      # cek aturan "minimal 3 aplikasi" & kesesuaian dengan slide
 ```
 

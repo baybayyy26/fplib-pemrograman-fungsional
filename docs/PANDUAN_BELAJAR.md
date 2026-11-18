@@ -102,8 +102,8 @@ hasil = kali2(4)   = 8   → dikembalikan
 ```
 
 **Dipakai di:** kelima aplikasi, misalnya alur keranjang
-[kasir_kantin.py#L61](../kasir_kantin.py#L61) dan rekap
-[presensi_kelas.py#L54](../presensi_kelas.py#L54).
+[kasir_kantin.py#L64](../kasir_kantin.py#L64) dan rekap
+[presensi_kelas.py#L57](../presensi_kelas.py#L57).
 
 ---
 
@@ -120,7 +120,7 @@ Tiga mode ([baris 86–92](../fplib.py#L86)):
 **Analogi:** stempel. Setiap kertas yang lewat distempel dengan cara yang sama.
 
 **Penerapan menarik:** di aplikasi, `ambil` juga dipakai untuk **membuat baris
-teks tampilan**. Contohnya [kasir_kantin.py#L84](../kasir_kantin.py#L84): setiap
+teks tampilan**. Contohnya [kasir_kantin.py#L87](../kasir_kantin.py#L87): setiap
 menu diubah menjadi satu baris string, lalu disatukan dengan `"\n".join(...)`.
 Tidak ada `for` + `print` berulang.
 
@@ -139,8 +139,8 @@ return lambda data: list(filter(predikat, data))     # baris 101
 hasilnya menjadi list supaya bisa dipakai berkali-kali.
 
 **Dipakai di:** memisahkan pesanan valid/ditolak
-([kasir_kantin.py#L62](../kasir_kantin.py#L62)), pemasukan vs pengeluaran
-([keuangan_pribadi.py#L45](../keuangan_pribadi.py#L45)), dan lainnya.
+([kasir_kantin.py#L65](../kasir_kantin.py#L65)), pemasukan vs pengeluaran
+([keuangan_pribadi.py#L48](../keuangan_pribadi.py#L48)), dan lainnya.
 
 ---
 
@@ -157,9 +157,9 @@ return lambda data: next(filter(predikat, data), bawaan)    # baris 113
 
 **Beda dengan `saring`:** `saring` → *semua* yang cocok (list); `cari` → *satu* (elemen).
 
-**Dipakai di:** mencari menu per kode ([kasir_kantin.py#L45](../kasir_kantin.py#L45)),
-buku per kode ([perpustakaan_mini.py#L58](../perpustakaan_mini.py#L58)), dan
-**nilai huruf** ([nilai_mahasiswa.py#L71](../nilai_mahasiswa.py#L71)). Tabel huruf
+**Dipakai di:** mencari menu per kode ([kasir_kantin.py#L48](../kasir_kantin.py#L48)),
+buku per kode ([perpustakaan_mini.py#L60](../perpustakaan_mini.py#L60)), dan
+**nilai huruf** ([nilai_mahasiswa.py#L74](../nilai_mahasiswa.py#L74)). Tabel huruf
 diurutkan dari ambang tertinggi, sehingga ambang pertama yang `angka >= min`
 adalah huruf yang benar.
 
@@ -172,7 +172,7 @@ berbeda dengan `list.sort()` yang mengubah list asli, sehingga tidak murni.
 **Sifat penting:** `sorted` di Python **stabil**: elemen dengan kunci sama
 mempertahankan urutan awalnya (diuji di `test_urutkan_stabil_untuk_nilai_sama`).
 
-**Kunci tuple:** [perpustakaan_mini.py#L95](../perpustakaan_mini.py#L95) memakai
+**Kunci tuple:** [perpustakaan_mini.py#L97](../perpustakaan_mini.py#L97) memakai
 `urutkan(lambda b: (b["kategori"], b["judul"]))`. Tuple dibandingkan dari elemen
 pertama, jadi hasilnya urut per kategori, lalu per judul di dalamnya.
 
@@ -212,9 +212,9 @@ Persis seperti contoh di slide: `sum(map(f, data))` ([baris 157](../fplib.py#L15
 **Satu fungsi, tiga aplikasi:**
 | Aplikasi | Baris | Fungsi yang dikirim |
 |---|---|---|
-| Kasir | [kasir_kantin.py#L72](../kasir_kantin.py#L72) | `lambda i: i["harga"] * i["qty"]` |
-| Keuangan | [keuangan_pribadi.py#L68](../keuangan_pribadi.py#L68) | `lambda t: t["nominal"]` |
-| Nilai | [nilai_mahasiswa.py#L66](../nilai_mahasiswa.py#L66) | `lambda k: k["nilai"] * k["bobot"]` |
+| Kasir | [kasir_kantin.py#L75](../kasir_kantin.py#L75) | `lambda i: i["harga"] * i["qty"]` |
+| Keuangan | [keuangan_pribadi.py#L71](../keuangan_pribadi.py#L71) | `lambda t: t["nominal"]` |
+| Nilai | [nilai_mahasiswa.py#L69](../nilai_mahasiswa.py#L69) | `lambda k: k["nilai"] * k["bobot"]` |
 
 Fungsinya sama, yang berbeda hanya cara menghitung nilai yang dikirim.
 
@@ -224,7 +224,7 @@ Fungsinya sama, yang berbeda hanya cara menghitung nilai yang dikirim.
 Menghitung `sum / len`. **Kasus tepi:** data kosong akan menyebabkan pembagian
 dengan nol, jadi dicegah dengan `if angka else 0.0` ([baris 172](../fplib.py#L172)).
 
-**Trik di Presensi** ([presensi_kelas.py#L38](../presensi_kelas.py#L38)):
+**Trik di Presensi** ([presensi_kelas.py#L41](../presensi_kelas.py#L41)):
 `rata_rata(lambda c: 100 if c["status"] == "H" else 0)`. Rata-rata dari
 nilai 100/0 sama dengan **persentase hadir**. Jadi satu fungsi dipakai untuk dua makna.
 
@@ -249,7 +249,7 @@ Dibaca dari dalam: saring aturan yang **tidak lolos**, lalu ambil **pesan**-nya 
 
 **Pola di aplikasi:** `saring(lambda x: not cek(x))` = data valid;
 `saring(lambda x: bool(cek(x)))` = data ditolak. Lihat
-[keuangan_pribadi.py#L43](../keuangan_pribadi.py#L43).
+[keuangan_pribadi.py#L46](../keuangan_pribadi.py#L46).
 
 ---
 
@@ -275,32 +275,32 @@ return f"{tanda}Rp{bulat:,}".replace(",", ".")      # baris 232
 
 Semua aplikasi punya tiga bagian: **Data → Logika → Tampilan (`main`)**.
 
-**Kasir Kantin** ([kasir_kantin.py#L61](../kasir_kantin.py#L61))
+**Kasir Kantin** ([kasir_kantin.py#L64](../kasir_kantin.py#L64))
 ```
 PESANAN ─saring(valid)→ ─ambil(ke_item_keranjang: cari menu)→ ─urutkan(subtotal↓)→ keranjang
 keranjang ─jumlahkan(harga×qty)→ total ─rupiah→ tampilan
 ```
 
-**Presensi Kelas** ([presensi_kelas.py#L54](../presensi_kelas.py#L54))
+**Presensi Kelas** ([presensi_kelas.py#L57](../presensi_kelas.py#L57))
 ```
 PRESENSI ─kelompokkan(nim)→ ─ambil isi dict→ ─ambil(rekap_satu: saring H + rata_rata)→ rekap
 rekap ─saring(persen < 75)→ tidak boleh ujian
 ```
 
-**Perpustakaan Mini** ([perpustakaan_mini.py#L87](../perpustakaan_mini.py#L87))
+**Perpustakaan Mini** ([perpustakaan_mini.py#L89](../perpustakaan_mini.py#L89))
 ```
 PEMINJAMAN ─ambil(lengkapi_denda: cari buku)→ ─saring(denda>0)→ ─urutkan(denda↓)→ daftar denda
 KATALOG ─urutkan(kategori, judul)→ ─kelompokkan(kategori)→ katalog
 PERMINTAAN ─validasi(buku ada, stok, nama)→ disetujui / ditolak
 ```
 
-**Keuangan Pribadi** ([keuangan_pribadi.py#L63](../keuangan_pribadi.py#L63))
+**Keuangan Pribadi** ([keuangan_pribadi.py#L66](../keuangan_pribadi.py#L66))
 ```
 TRANSAKSI ─saring(valid)→ ─saring(masuk/keluar)→ ─jumlahkan(nominal)→ saldo
 pengeluaran ─kelompokkan(kategori)→ ─ambil(total)→ ─urutkan(total↓)→ per kategori
 ```
 
-**Nilai Mahasiswa** ([nilai_mahasiswa.py#L80](../nilai_mahasiswa.py#L80))
+**Nilai Mahasiswa** ([nilai_mahasiswa.py#L83](../nilai_mahasiswa.py#L83))
 ```
 MAHASISWA ─saring(valid)→ ─ambil(nilai akhir + cari huruf)→ ─urutkan(akhir↓)→ peringkat
 peringkat ─rata_rata(akhir)→ rata kelas ; ─saring(≥60)→ lulus
@@ -320,6 +320,7 @@ peringkat ─rata_rata(akhir)→ rata kelas ; ─saring(≥60)→ lulus
 | Bagaimana membuktikan tiap fungsi dipakai ≥ 3 aplikasi? | `tools/matriks.py` membaca kode dengan `ast` dan mencatat file + baris; `pytest` gagal jika aturan dilanggar. Hasilnya di MATRIKS.md. |
 | Kalau data kosong? | `jumlahkan` → 0, `rata_rata` → 0.0, `cari` → `bawaan`, `kelompokkan` → `{}`. Semua diuji. |
 | Kenapa `rupiah` tidak berpola `fungsi()(data)`? | Tidak butuh aturan tambahan; justru karena berbentuk `f(x)`, ia bisa langsung dikirim ke `ambil(rupiah)`. |
+| Bisakah aplikasinya menerima data baru? | Bisa: `python <aplikasi>.py --interaktif`. `main` menerima data sebagai argumen, jadi data ketikan diproses oleh fungsi logika yang sama; input salah ditolak `validasi`. |
 | Kenapa ada `round(akhir, 2)` di Nilai? | Pecahan biner bisa membuat 80 menjadi 79.999…, sehingga huruf A bisa turun ke B+. |
 
 ---

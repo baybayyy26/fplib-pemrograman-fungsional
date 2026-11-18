@@ -5,8 +5,11 @@ Menu, keranjang, dan total belanja.
 Fungsi fplib yang dipakai: pipe, ambil, saring, cari, urutkan,
 jumlahkan, validasi, rupiah.
 
-Jalankan:  python kasir_kantin.py
+Jalankan:  python kasir_kantin.py               (data contoh)
+           python kasir_kantin.py --interaktif  (pesanan diketik sendiri)
 """
+
+import sys
 
 from fplib import pipe, ambil, saring, cari, urutkan, jumlahkan, validasi, rupiah
 
@@ -75,7 +78,7 @@ def total_belanja(keranjang):
 # ---------------------------------------------------------------------------
 # Tampilan
 # ---------------------------------------------------------------------------
-def main():
+def main(pesanan=PESANAN, dibayar=UANG_DIBAYAR):
     print("=" * 52)
     print(" KASIR KANTIN".center(52))
     print("=" * 52)
@@ -86,14 +89,14 @@ def main():
     )(urutkan("harga")(MENU))
     print("\n".join(baris_menu))
 
-    ditolak = pesanan_ditolak(PESANAN)
+    ditolak = pesanan_ditolak(pesanan)
     if ditolak:
         print("\nPESANAN DITOLAK")
         print("\n".join(ambil(
             lambda p: f"  {p['kode']} x{p['qty']}: {', '.join(cek_pesanan(p))}"
         )(ditolak)))
 
-    keranjang = buat_keranjang(PESANAN)
+    keranjang = buat_keranjang(pesanan)
     print("\nKERANJANG (subtotal terbesar dulu)")
     print("\n".join(ambil(
         lambda i: f"  {i['nama']:<14} {i['qty']:>2} x {rupiah(i['harga']):>8} = {rupiah(i['subtotal']):>9}"
@@ -102,13 +105,40 @@ def main():
     total = total_belanja(keranjang)
     print("-" * 52)
     print(f"  {'TOTAL':<30}{rupiah(total):>18}")
-    print(f"  {'DIBAYAR':<30}{rupiah(UANG_DIBAYAR):>18}")
-    if UANG_DIBAYAR >= total:
-        print(f"  {'KEMBALIAN':<30}{rupiah(UANG_DIBAYAR - total):>18}")
+    print(f"  {'DIBAYAR':<30}{rupiah(dibayar):>18}")
+    if dibayar >= total:
+        print(f"  {'KEMBALIAN':<30}{rupiah(dibayar - total):>18}")
     else:
-        print(f"  {'UANG KURANG':<30}{rupiah(total - UANG_DIBAYAR):>18}")
+        print(f"  {'UANG KURANG':<30}{rupiah(total - dibayar):>18}")
     print("=" * 52)
 
 
+def tanya(pesan):
+    """Baca satu baris dari pengguna; akhir input (Ctrl+D / Ctrl+Z) dianggap baris kosong."""
+    try:
+        return input(pesan).strip()
+    except EOFError:
+        return ""
+
+
+def ke_pesanan(teks):
+    """'M01 2' -> {"kode": "M01", "qty": 2}; qty yang bukan angka menjadi 0 (ditolak validasi)."""
+    bagian = teks.split()
+    qty = int(bagian[1]) if len(bagian) > 1 and bagian[1].lstrip("-").isdigit() else 0
+    return {"kode": bagian[0].upper(), "qty": qty}
+
+
+def main_interaktif():
+    print("Kode menu: " + ", ".join(ambil(lambda m: f"{m['kode']} {m['nama']}")(MENU)))
+    baris = []
+    while teks := tanya("Pesanan (kode jumlah, mis. M01 2; Enter kosong = selesai): "):
+        baris.append(ke_pesanan(teks))
+    uang = tanya("Uang dibayar (angka): ")
+    main(tuple(baris), int(uang) if uang.isdigit() else 0)
+
+
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()

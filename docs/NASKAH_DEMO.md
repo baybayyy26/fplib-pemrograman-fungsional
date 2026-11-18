@@ -7,7 +7,7 @@ masing-masing berbicara sekitar 5 menit.
 ## Persiapan (H-1 dan 10 menit sebelum maju)
 
 - [ ] Clone repo bersih dari GitHub di laptop demo, lalu buat venv dan `pip install -r requirements.txt`
-- [ ] Coba sekali: `python jalankan_semua.py` → semua tampil, pytest **56 passed**
+- [ ] Coba sekali: `python jalankan_semua.py` → semua tampil, pytest **62 passed**
 - [ ] Perbesar huruf terminal (Ctrl + `+`), tema terang/kontras tinggi
 - [ ] Buka VS Code dengan tab: `fplib.py`, `MATRIKS.md`, dan aplikasi masing-masing
 - [ ] Aktifkan venv, `cls`/`clear` terminal
@@ -75,7 +75,7 @@ Jalankan, lalu tunjukkan:
 pytest -v
 python tools/matriks.py --cek
 ```
-> "Ada 56 pengujian: setiap fungsi diuji untuk kasus normal dan kasus tepi,
+> "Ada 62 pengujian: setiap fungsi diuji untuk kasus normal dan kasus tepi,
 > diuji bahwa data asli tidak berubah, dan ada test yang membaca kode kelima
 > aplikasi untuk memastikan setiap fungsi dipakai minimal tiga aplikasi sesuai
 > matriks. File dan baris pemanggilannya ada di MATRIKS.md dan di laporan."
@@ -89,4 +89,4 @@ Bayhaqy menutup: "Terima kasih, kami siap menerima pertanyaan."
 | `pytest` tidak ditemukan | venv belum aktif → `venv\Scripts\activate`, atau `python -m pytest -v` |
 | Waktu mepet | `python jalankan_semua.py` (semua aplikasi + pytest sekali jalan) |
 | Laptop bermasalah | Repo sudah di-clone di laptop anggota lain |
-| Ditanya "coba ubah data" | Ubah satu angka di bagian **Data** aplikasi, jalankan ulang; logika tidak perlu disentuh |
+| Ditanya "coba ubah data" | Jalankan `python <aplikasi>.py --interaktif` dan ketik data baru langsung, atau ubah satu angka di bagian **Data** |
