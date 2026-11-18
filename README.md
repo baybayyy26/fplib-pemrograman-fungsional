@@ -1,6 +1,6 @@
 # Perancangan Library Pemrograman Fungsional fplib.py dan Penerapannya pada Lima Aplikasi Sederhana
 
-Tugas **Pemrograman Fungsional · Informatika UMM**: membangun satu library
+Tugas **Pemrograman Fungsional: membangun satu library
 (`fplib.py`, singkatan dari *functional programming library*) berisi kumpulan fungsi umum bergaya fungsional, lalu memakainya
 di **lima aplikasi**. Setiap fungsi dipakai oleh **minimal 3 dari 5 aplikasi**.
 
