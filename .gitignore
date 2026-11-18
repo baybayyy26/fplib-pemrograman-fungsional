@@ -1,0 +1,15 @@
+# Lingkungan virtual
+venv/
+.venv/
+
+# Cache Python & pytest
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor / OS
+.vscode/*
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
