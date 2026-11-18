@@ -1,0 +1,640 @@
+"""
+Pembuat laporan otomatis (laporan/Laporan_fplib.docx -> PDF).
+
+Isi teknis (kode fungsi, matriks, file & baris pemanggilan, hasil pytest)
+diambil LANGSUNG dari kode saat skrip dijalankan, sehingga laporan selalu
+sesuai dengan repositori.
+
+Pemakaian (dari folder utama repo):
+    pip install -r laporan/requirements-laporan.txt
+    python laporan/buat_laporan.py
+Lalu buka Laporan_fplib.docx di Word -> File -> Save As -> PDF,
+atau (jika LibreOffice terpasang):
+    soffice --headless --convert-to pdf --outdir laporan laporan/Laporan_fplib.docx
+
+Isi bagian bertanda [ ... ] (nama, NIM, dosen, URL repo) di IDENTITAS di bawah.
+"""
+
+import ast
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+from docx import Document
+from docx.enum.section import WD_SECTION
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_COLOR_INDEX
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Pt, RGBColor
+
+AKAR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(AKAR / "tools"))
+import matriks  # noqa: E402  (tools/matriks.py)
+
+# ---------------------------------------------------------------------------
+# IDENTITAS — isi sebelum dikumpulkan
+# ---------------------------------------------------------------------------
+IDENTITAS = {
+    "kelas": "Pemrograman Fungsional G",
+    "dosen": "Irtafa Masyuri, S.S.T., M.Tr.T.",
+    "repo": "https://github.com/baybayyy26/fplib-pemrograman-fungsional",
+    "anggota": [
+        ("Aditiya Al Bayhaqy", "202410370110502",
+         "fplib.py, test_fplib.py, Kasir Kantin, Presensi Kelas, README & repositori"),
+        ("Sigit Novriyanto", "202410370110500",
+         "Perpustakaan Mini, Keuangan Pribadi, Nilai Mahasiswa, laporan"),
+    ],
+}
+
+FONT = "Times New Roman"
+FONT_KODE = "Consolas"
+WARNA_AKSEN = RGBColor(0x1F, 0x3D, 0x2B)  # hijau tua seperti slide
+WARNA_KEPALA_TABEL = "DCE8DF"
+
+PENJELASAN = {
+    "pipe": (
+        "Merangkai beberapa fungsi menjadi satu alur yang dijalankan dari kiri ke kanan: "
+        "pipe(f, g, h)(data) sama dengan h(g(f(data))). Tanpa langkah sama sekali, pipe() "
+        "mengembalikan data apa adanya.",
+        "Memakai functools.reduce: dimulai dari data, lalu setiap fungsi di dalam langkah "
+        "menerima hasil fungsi sebelumnya. Karena semua fungsi fplib menghasilkan fungsi "
+        "berbentuk f(data), semuanya bisa disusun di dalam pipe.",
+        'pipe(saring(lambda m: m["nilai"] >= 70), urutkan("nilai", menurun=True), ambil("nama"))(data)',
+    ),
+    "ambil": (
+        "Mengambil atau mengubah setiap elemen data (versi fungsional dari map). "
+        'ambil("nama") menghasilkan daftar nilai satu kolom, ambil("nama", "nilai") menghasilkan '
+        "dict berisi kolom-kolom itu saja, dan ambil(fungsi) menerapkan fungsi ke tiap elemen.",
+        "Kunci diubah menjadi fungsi pengubah, lalu dijalankan dengan map dan dibungkus list. "
+        "Di aplikasi, ambil juga dipakai untuk mengubah setiap data menjadi satu baris teks tampilan.",
+        'ambil("nama")(data)  ->  ["Ani", "Budi", "Citra"]',
+    ),
+    "saring": (
+        "Memilih elemen yang memenuhi syarat (predikat), versi fungsional dari filter.",
+        "Membungkus filter bawaan Python dan mengubah hasilnya menjadi list baru; data asli tidak berubah.",
+        'saring(lambda m: m["kelas"] == "A")(data)',
+    ),
+    "cari": (
+        "Mengembalikan elemen PERTAMA yang memenuhi syarat, atau nilai bawaan (None) jika tidak ada.",
+        "next(filter(predikat, data), bawaan): filter bersifat malas sehingga pencarian berhenti "
+        "begitu elemen pertama ditemukan; jika tidak ada, next mengembalikan bawaan, bukan error.",
+        'cari(lambda m: m["kode"] == "M02")(MENU)',
+    ),
+    "urutkan": (
+        "Mengurutkan data berdasarkan kunci, naik atau menurun, tanpa mengubah data asli.",
+        "Memakai sorted (membuat list baru, berbeda dengan list.sort yang mengubah list asli). "
+        "sorted bersifat stabil, dan kunci boleh berupa tuple untuk pengurutan bertingkat.",
+        'urutkan("akhir", menurun=True)(daftar_mahasiswa)',
+    ),
+    "kelompokkan": (
+        "Mengelompokkan data menjadi dict {nilai_kunci: [elemen, ...]} dengan urutan kemunculan tetap.",
+        "Memakai reduce dengan dict kosong sebagai awal. Setiap langkah membuat dict BARU "
+        "({**lama, k: lama.get(k, []) + [item]}) sehingga tidak ada struktur yang diubah. "
+        "Berbeda dengan itertools.groupby, data tidak perlu diurutkan terlebih dahulu.",
+        'kelompokkan("kategori")(pengeluaran)',
+    ),
+    "jumlahkan": (
+        "Menjumlahkan nilai setiap elemen. Fungsi ini sama persis dengan contoh di slide: "
+        "fungsinya sama, yang berbeda hanya cara menghitung nilai yang dikirim sebagai argumen.",
+        "sum(map(f, data)): map menghitung nilai tiap elemen, sum menjumlahkannya. Data kosong menghasilkan 0.",
+        'jumlahkan(lambda i: i["harga"] * i["qty"])(keranjang)',
+    ),
+    "rata_rata": (
+        "Menghitung rata-rata nilai setiap elemen; data kosong menghasilkan 0.0 (tidak error).",
+        "Nilai dihitung dengan map, lalu sum dibagi len. Pembagian dengan nol dicegah. "
+        "Di Presensi, rata-rata dari nilai 100/0 dipakai sebagai persentase kehadiran.",
+        'rata_rata("akhir")(peringkat)',
+    ),
+    "validasi": (
+        "Membuat pemeriksa data dari pasangan (syarat, pesan_kesalahan). Pemeriksa menerima satu "
+        "elemen dan mengembalikan daftar pesan kesalahan; daftar kosong berarti valid.",
+        "Aturan yang tidak lolos disaring (filter), lalu diambil pesannya (map). Syarat yang "
+        "menimbulkan error, misalnya kolom tidak ada, dianggap gagal sehingga program tidak berhenti.",
+        'validasi((lambda t: t["nominal"] > 0, "nominal harus lebih dari 0"))(transaksi)',
+    ),
+    "rupiah": (
+        "Memformat angka menjadi teks Rupiah dengan pemisah titik, misalnya 1500000 -> Rp1.500.000.",
+        "Dibulatkan setengah ke atas dengan int(abs(x) + 0.5) karena round() bawaan memakai "
+        "banker's rounding. Pemisah ribuan ',' diganti '.'. Fungsi ini langsung mengembalikan "
+        "teks sehingga bisa dikirim ke fungsi lain, misalnya ambil(rupiah).",
+        "rupiah(1500000)  ->  'Rp1.500.000'",
+    ),
+}
+
+APLIKASI_INFO = {
+    "Kasir": ("Kasir Kantin", "kasir_kantin.py",
+              "Menampilkan menu, menolak pesanan yang salah (qty 0 atau kode tidak ada), membentuk keranjang "
+              "dengan pipe(saring, ambil, urutkan), lalu menghitung total belanja, uang dibayar, dan kembalian."),
+    "Presensi": ("Presensi Kelas", "presensi_kelas.py",
+                 "Mengelompokkan catatan kehadiran per mahasiswa dan per pertemuan, menghitung persentase hadir "
+                 "dengan rata_rata, dan menyaring mahasiswa dengan kehadiran di bawah 75%."),
+    "Perpus": ("Perpustakaan Mini", "perpustakaan_mini.py",
+               "Menampilkan katalog per kategori beserta sisa stok, menghitung denda keterlambatan "
+               "(batas 7 hari, Rp1.000/hari), dan memvalidasi permintaan pinjam baru."),
+    "Keuangan": ("Keuangan Pribadi", "keuangan_pribadi.py",
+                 "Mengabaikan transaksi tidak valid, menghitung total pemasukan, pengeluaran, dan saldo, "
+                 "merekap pengeluaran per kategori, serta rata-rata per pengeluaran."),
+    "Nilai": ("Nilai Mahasiswa", "nilai_mahasiswa.py",
+              "Memvalidasi komponen nilai, menghitung nilai akhir berbobot, menentukan nilai huruf "
+              "dengan cari, menyusun peringkat, serta rata-rata kelas dan jumlah yang lulus."),
+}
+
+GAMBAR_APLIKASI = {
+    "Kasir": "03_kasir_kantin.png",
+    "Presensi": "04_presensi_kelas.png",
+    "Perpus": "05_perpustakaan_mini.png",
+    "Keuangan": "06_keuangan_pribadi.png",
+    "Nilai": "07_nilai_mahasiswa.png",
+}
+LEBAR_GAMBAR_APLIKASI = 9.5
+
+PUSTAKA = [
+    "Python Software Foundation. Functional Programming HOWTO. https://docs.python.org/3/howto/functional.html",
+    "Python Software Foundation. functools — Higher-order functions and operations on callable objects. "
+    "https://docs.python.org/3/library/functools.html",
+    "Python Software Foundation. Built-in Functions (map, filter, sorted, sum, next). "
+    "https://docs.python.org/3/library/functions.html",
+    "Python Software Foundation. Sorting Techniques. https://docs.python.org/3/howto/sorting.html",
+    "Python Software Foundation. ast — Abstract Syntax Trees. https://docs.python.org/3/library/ast.html",
+    "Python Software Foundation. venv — Creation of virtual environments. https://docs.python.org/3/library/venv.html",
+    "pytest-dev. pytest documentation. https://docs.pytest.org/",
+]
+
+
+# ---------------------------------------------------------------------------
+# Pengambilan data dari repo
+# ---------------------------------------------------------------------------
+def sumber_fungsi():
+    """{nama: (baris_awal, baris_akhir, kode_tanpa_docstring)} untuk fungsi di fplib.py."""
+    teks = (AKAR / "fplib.py").read_text(encoding="utf-8")
+    baris = teks.splitlines()
+    hasil = {}
+    for simpul in ast.parse(teks).body:
+        if isinstance(simpul, ast.FunctionDef):
+            awal, akhir = simpul.lineno, simpul.end_lineno
+            buang = set()
+            if (simpul.body and isinstance(simpul.body[0], ast.Expr)
+                    and isinstance(simpul.body[0].value, ast.Constant)):
+                buang = set(range(simpul.body[0].lineno, simpul.body[0].end_lineno + 1))
+            kode = [baris[i - 1] for i in range(awal, akhir + 1) if i not in buang]
+            hasil[simpul.name] = (awal, akhir, "\n".join(kode).rstrip())
+    return hasil
+
+
+def hasil_pytest():
+    proses = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+        cwd=AKAR, capture_output=True, text=True,
+    )
+    keluaran = proses.stdout.strip().splitlines()
+    ringkas = keluaran[-1].strip("= ") if keluaran else "pytest tidak berjalan"
+    lulus = re.search(r"(\d+) passed", ringkas)
+    gagal = re.search(r"(\d+) failed", ringkas)
+    return ringkas, int(lulus.group(1)) if lulus else 0, int(gagal.group(1)) if gagal else 0
+
+
+def keluaran_aplikasi(berkas, maks_baris=14):
+    proses = subprocess.run([sys.executable, berkas], cwd=AKAR, capture_output=True, text=True)
+    baris = proses.stdout.rstrip().splitlines()
+    return baris[:maks_baris] + (["  ..."] if len(baris) > maks_baris else [])
+
+
+# ---------------------------------------------------------------------------
+# Pembantu format dokumen
+# ---------------------------------------------------------------------------
+def atur_font(run, ukuran=12, tebal=False, miring=False, nama=FONT, warna=None):
+    run.font.name = nama
+    run.font.size = Pt(ukuran)
+    run.bold = tebal
+    run.italic = miring
+    run._element.rPr.rFonts.set(qn("w:eastAsia"), nama)
+    if warna is not None:
+        run.font.color.rgb = warna
+
+
+def paragraf(doc, teks="", ukuran=12, tebal=False, miring=False, rata=WD_ALIGN_PARAGRAPH.JUSTIFY,
+             sebelum=0, sesudah=6):
+    p = doc.add_paragraph()
+    p.alignment = rata
+    p.paragraph_format.space_before = Pt(sebelum)
+    p.paragraph_format.space_after = Pt(sesudah)
+    p.paragraph_format.line_spacing = 1.1
+    if teks:
+        tambah_teks(p, teks, ukuran, tebal, miring)
+    return p
+
+
+def tambah_teks(p, teks, ukuran=12, tebal=False, miring=False):
+    """Teks di antara `backtick` ditulis dengan huruf kode."""
+    for i, bagian in enumerate(re.split(r"`([^`]*)`", teks)):
+        if not bagian:
+            continue
+        run = p.add_run(bagian)
+        if re.search(r"\[[A-Z][^\]]*\]", bagian):
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if i % 2:
+            atur_font(run, ukuran - 1, tebal, miring, nama=FONT_KODE)
+        else:
+            atur_font(run, ukuran, tebal, miring)
+
+
+def judul(doc, teks, tingkat=1):
+    h = doc.add_heading(level=tingkat)
+    h.paragraph_format.space_before = Pt(14 if tingkat == 1 else 8)
+    h.paragraph_format.space_after = Pt(6)
+    h.paragraph_format.keep_with_next = True
+    run = h.add_run(teks)
+    atur_font(run, 14 if tingkat == 1 else 12, tebal=True, warna=WARNA_AKSEN)
+    return h
+
+
+def poin(doc, teks):
+    p = doc.add_paragraph(style="List Bullet")
+    p.paragraph_format.space_after = Pt(3)
+    p.paragraph_format.line_spacing = 1.15
+    tambah_teks(p, teks)
+    return p
+
+
+def blok_kode(doc, kode, ukuran=9):
+    tabel = doc.add_table(rows=1, cols=1)
+    tabel.alignment = WD_TABLE_ALIGNMENT.CENTER
+    sel = tabel.cell(0, 0)
+    arsir(sel, "F3F5F4")
+    sel.paragraphs[0].paragraph_format.space_after = Pt(0)
+    for i, baris in enumerate(kode.splitlines()):
+        p = sel.paragraphs[0] if i == 0 else sel.add_paragraph()
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.line_spacing = 1.0
+        run = p.add_run(baris if baris else " ")
+        atur_font(run, ukuran, nama=FONT_KODE)
+    trPr = tabel.rows[0]._tr.get_or_add_trPr()
+    tak_pecah = OxmlElement("w:cantSplit")
+    tak_pecah.set(qn("w:val"), "true")
+    trPr.append(tak_pecah)
+    garis_tabel(tabel, "BFCFC4")
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+
+
+def arsir(sel, warna):
+    tcPr = sel._element.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), warna)
+    tcPr.append(shd)
+
+
+def garis_tabel(tabel, warna="8FA898"):
+    tblPr = tabel._element.tblPr
+    batas = OxmlElement("w:tblBorders")
+    for sisi in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        e = OxmlElement(f"w:{sisi}")
+        e.set(qn("w:val"), "single")
+        e.set(qn("w:sz"), "4")
+        e.set(qn("w:color"), warna)
+        batas.append(e)
+    tblPr.append(batas)
+
+
+def tabel(doc, kepala, isi, lebar_cm, ukuran=10, rata_tengah=(), utuh=False):
+    t = doc.add_table(rows=1, cols=len(kepala))
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t.autofit = False
+    for i, teks in enumerate(kepala):
+        sel = t.rows[0].cells[i]
+        arsir(sel, WARNA_KEPALA_TABEL)
+        p = sel.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        tambah_teks(p, teks, ukuran, tebal=True)
+    for baris in isi:
+        sel_baris = t.add_row().cells
+        for i, teks in enumerate(baris):
+            p = sel_baris[i].paragraphs[0]
+            if i in rata_tengah:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            tambah_teks(p, str(teks), ukuran)
+    for i, kolom in enumerate(t.columns):
+        kolom.width = Cm(lebar_cm[i])
+    tblW = t._element.tblPr.find(qn("w:tblW"))
+    if tblW is None:
+        tblW = OxmlElement("w:tblW")
+        t._element.tblPr.append(tblW)
+    tblW.set(qn("w:w"), str(int(sum(lebar_cm) * 567)))
+    tblW.set(qn("w:type"), "dxa")
+    for baris in t.rows:
+        for i, sel in enumerate(baris.cells):
+            sel.width = Cm(lebar_cm[i])
+            for p in sel.paragraphs:
+                p.paragraph_format.space_after = Pt(1)
+                p.paragraph_format.space_before = Pt(1)
+    for i, baris in enumerate(t.rows):
+        trPr_b = baris._tr.get_or_add_trPr()
+        tak_pecah = OxmlElement("w:cantSplit")
+        tak_pecah.set(qn("w:val"), "true")
+        trPr_b.append(tak_pecah)
+        if utuh and i < len(t.rows) - 1:
+            for sel in baris.cells:
+                for p in sel.paragraphs:
+                    p.paragraph_format.keep_with_next = True
+    # ulangi kepala tabel di setiap halaman
+    trPr = t.rows[0]._tr.get_or_add_trPr()
+    ulang = OxmlElement("w:tblHeader")
+    ulang.set(qn("w:val"), "true")
+    trPr.append(ulang)
+    garis_tabel(t)
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+    return t
+
+
+GAMBAR = AKAR / "laporan" / "gambar"
+_nomor_gambar = [0]
+
+
+def gambar(doc, nama_file, keterangan, lebar_cm=13.0):
+    """Sisipkan screenshot asli (Google Colab / GitHub) beserta keterangan bernomor."""
+    berkas = GAMBAR / nama_file
+    if not berkas.exists():
+        return
+    _nomor_gambar[0] += 1
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.keep_with_next = True
+    p.paragraph_format.space_after = Pt(2)
+    p.add_run().add_picture(str(berkas), width=Cm(lebar_cm))
+    k = paragraf(doc, "", 10, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=8)
+    tambah_teks(k, f"Gambar {_nomor_gambar[0]}. ", 10, tebal=True)
+    tambah_teks(k, keterangan, 10, miring=True)
+
+
+def nomor_halaman(section):
+    p = section.footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for jenis, teks in (("begin", None), (None, "PAGE"), ("end", None)):
+        run = p.add_run()
+        atur_font(run, 10)
+        if jenis:
+            e = OxmlElement("w:fldChar")
+            e.set(qn("w:fldCharType"), jenis)
+        else:
+            e = OxmlElement("w:instrText")
+            e.set(qn("xml:space"), "preserve")
+            e.text = teks
+        run._element.append(e)
+
+
+def ganti_halaman(doc):
+    doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+
+
+# ---------------------------------------------------------------------------
+# Isi laporan
+# ---------------------------------------------------------------------------
+def sampul(doc):
+    for _ in range(3):
+        paragraf(doc)
+    paragraf(doc, "LAPORAN TUGAS", 16, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=2)
+    paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 16, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=18)
+    p = paragraf(doc, "", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=4)
+    run = p.add_run("Membangun Library Fungsional Sendiri:")
+    atur_font(run, 14, tebal=True, warna=WARNA_AKSEN)
+    p = paragraf(doc, "", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=40)
+    run = p.add_run("fplib.py untuk Lima Aplikasi")
+    atur_font(run, 14, tebal=True, warna=WARNA_AKSEN)
+
+    paragraf(doc, f"Kelas: {IDENTITAS['kelas']}", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=10)
+    t = tabel(doc, ["No", "Nama", "NIM"],
+              [(i + 1, n, nim) for i, (n, nim, _) in enumerate(IDENTITAS["anggota"])],
+              [1.2, 7.5, 4.5], ukuran=11, rata_tengah=(0, 2), utuh=True)
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    paragraf(doc, f"Dosen Pengampu: {IDENTITAS['dosen']}", rata=WD_ALIGN_PARAGRAPH.CENTER, sebelum=10, sesudah=60)
+
+    for teks in ("PROGRAM STUDI INFORMATIKA", "FAKULTAS TEKNIK",
+                 "UNIVERSITAS MUHAMMADIYAH MALANG", "2026"):
+        paragraf(doc, teks, 13, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=2)
+
+
+def bab_pendahuluan(doc):
+    judul(doc, "1. Pendahuluan")
+    judul(doc, "1.1 Latar Belakang", 2)
+    paragraf(doc, "Library adalah kumpulan fungsi siap pakai yang ditulis sekali lalu dipanggil dari program "
+                  "lain dengan import. Python menyediakan library bawaan (math, functools, itertools), library "
+                  "pihak ketiga (numpy, pandas, requests), dan memungkinkan kita membuat library sendiri berupa "
+                  "file .py yang di-import dari file lain. Ketiganya dipakai dengan cara yang sama: import, "
+                  "lalu panggil fungsinya.")
+    paragraf(doc, "Tugas ini meminta kelompok membuat satu library sendiri, `fplib.py`, berisi kumpulan fungsi "
+                  "umum yang ditulis dengan gaya fungsional, lalu memakainya di lima aplikasi: Kasir Kantin, "
+                  "Presensi Kelas, Perpustakaan Mini, Keuangan Pribadi, dan Nilai Mahasiswa. Setiap fungsi "
+                  "wajib dipakai oleh minimal tiga dari lima aplikasi.")
+    judul(doc, "1.2 Tujuan", 2)
+    for t in ("Menerapkan prinsip pemrograman fungsional (fungsi murni, fungsi tingkat tinggi, closure, "
+              "komposisi) dalam sebuah library yang dapat dipakai ulang.",
+              "Membuktikan bahwa satu fungsi yang sama dapat melayani kebutuhan berbeda di beberapa aplikasi "
+              "hanya dengan mengganti fungsi yang dikirim sebagai argumen.",
+              "Menguji library dan aplikasi secara otomatis dengan pytest.",
+              "Menerapkan kebiasaan baik memakai library: lingkungan terpisah, pencatatan versi, dan import eksplisit."):
+        poin(doc, t)
+    judul(doc, "1.3 Konsep Fungsional yang Diterapkan", 2)
+    tabel(doc, ["Konsep", "Penerapan di fplib"], [
+        ("Fungsi murni", "Tidak ada fungsi yang mengubah data masukan; memakai `sorted`, `{**dict}`, "
+                         "`list + [x]`, bukan `.sort()` / `.append()`."),
+        ("Fungsi tingkat tinggi", "Fungsi menerima fungsi (mis. lambda) dan mengembalikan fungsi baru."),
+        ("Closure", "Fungsi yang dikembalikan mengingat aturan yang diberikan, mis. `f` di dalam `jumlahkan`."),
+        ("Komposisi", "`pipe(f, g, h)` merangkai fungsi menjadi satu alur pemrosesan."),
+        ("Map / filter / reduce", "Dipakai di `ambil`, `saring`, `cari`, `validasi`, `pipe`, `kelompokkan`."),
+    ], [4.0, 12.0])
+    paragraf(doc, "Pola pemakaian seluruh fungsi (kecuali `rupiah`) adalah `fungsi(aturan)(data)`. Karena "
+                  "semua hasilnya berbentuk fungsi yang menerima data, fungsi-fungsi tersebut dapat dirangkai "
+                  "dengan `pipe`.")
+
+
+def bab_struktur(doc):
+    judul(doc, "2. Struktur Repositori dan Cara Menjalankan")
+    paragraf(doc, f"Repositori: {IDENTITAS['repo']}")
+    tabel(doc, ["File", "Isi"], [
+        ("`fplib.py`", "Library: 10 fungsi fungsional"),
+        ("`test_fplib.py`", "Pengujian pytest untuk library, kelima aplikasi, dan aturan matriks"),
+        ("`kasir_kantin.py` … `nilai_mahasiswa.py`", "Lima aplikasi yang bisa dijalankan"),
+        ("`README.md`", "Daftar fungsi dan cara pakai"),
+        ("`MATRIKS.md`, `tools/matriks.py`", "Matriks fungsi × aplikasi beserta file & baris (dibuat otomatis)"),
+        ("`requirements.txt`", "Versi pustaka hasil `pip freeze`"),
+    ], [6.5, 9.5])
+    blok_kode(doc, "python -m venv venv\n"
+                   "venv\\Scripts\\activate            # Linux/macOS: source venv/bin/activate\n"
+                   "pip install -r requirements.txt\n\n"
+                   "python kasir_kantin.py           # jalankan tiap aplikasi\n"
+                   "pytest -v                        # jalankan pengujian\n"
+                   "python tools/matriks.py --cek    # cek aturan minimal 3 aplikasi")
+    paragraf(doc, "Seluruh program juga dijalankan di Google Colab langsung dari repositori GitHub. "
+                  "Gambar-gambar pada bab 4 dan bab 7 adalah tangkapan layar asli dari notebook tersebut.")
+    gambar(doc, "01_repo_github.png", "Repositori GitHub baybayyy26/fplib-pemrograman-fungsional.", 10.5)
+
+
+def bab_fungsi(doc, sumber, data_matriks):
+    daftar, hasil = data_matriks
+    judul(doc, "3. Penjelasan Tiap Fungsi Library")
+    paragraf(doc, "Parameter `kunci`/`nilai` boleh berupa nama kolom (mis. `\"nilai\"`) atau fungsi. "
+                  "Nama kolom diubah menjadi fungsi oleh pembantu internal `_ke_fungsi` "
+                  f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Kode di bawah "
+                  "diambil langsung dari fplib.py (docstring tidak ditampilkan).")
+    for i, f in enumerate(daftar, start=1):
+        awal, akhir, kode = sumber[f]
+        kegunaan, cara, contoh = PENJELASAN[f]
+        judul(doc, f"3.{i} {f}  (fplib.py baris {awal}–{akhir})", 2)
+        p = paragraf(doc, sesudah=3)
+        tambah_teks(p, "Kegunaan: ", tebal=True)
+        tambah_teks(p, kegunaan)
+        p = paragraf(doc, sesudah=3)
+        tambah_teks(p, "Cara kerja: ", tebal=True)
+        tambah_teks(p, cara)
+        blok_kode(doc, kode)
+        p = paragraf(doc, sesudah=3)
+        tambah_teks(p, "Contoh: ", tebal=True)
+        tambah_teks(p, f"`{contoh}`")
+        p = paragraf(doc, sesudah=8)
+        tambah_teks(p, "Dipakai di: ", tebal=True)
+        tambah_teks(p, ", ".join(f"{APLIKASI_INFO[l][0]} (`{hasil[f][l]['file']}`)" for l in hasil[f])
+                    + f" — {len(hasil[f])} aplikasi.")
+
+
+def bab_aplikasi(doc, data_matriks):
+    daftar, hasil = data_matriks
+    judul(doc, "4. Lima Aplikasi")
+    for i, (label, (nama, berkas, uraian)) in enumerate(APLIKASI_INFO.items(), start=1):
+        dipakai = [f for f in daftar if label in hasil[f]]
+        judul(doc, f"4.{i} {nama} ({berkas})", 2)
+        paragraf(doc, uraian, sesudah=3)
+        p = paragraf(doc, sesudah=4)
+        tambah_teks(p, f"Fungsi fplib ({len(dipakai)}): ", tebal=True)
+        tambah_teks(p, ", ".join(f"`{f}`" for f in dipakai))
+        gambar(doc, GAMBAR_APLIKASI[label], f"Hasil menjalankan {berkas} di Google Colab.", LEBAR_GAMBAR_APLIKASI)
+
+
+def bab_matriks(doc, data_matriks):
+    daftar, hasil = data_matriks
+    label = [a[0] for a in matriks.APLIKASI]
+    judul(doc, "5. Matriks Fungsi × Aplikasi")
+    paragraf(doc, "Matriks berikut dibuat otomatis oleh `tools/matriks.py`, yang membaca kode kelima aplikasi "
+                  "dengan modul `ast` (tanpa menjalankannya) dan mencatat setiap pemakaian fungsi fplib.")
+    tabel(doc, ["Fungsi"] + label + ["Jumlah"],
+          [[f"`{f}`"] + ["✓" if l in hasil[f] else "" for l in label] + [len(hasil[f])] for f in daftar],
+          [3.4, 1.9, 2.1, 1.9, 2.3, 1.9, 2.0], ukuran=10, rata_tengah=(1, 2, 3, 4, 5, 6))
+    jumlah = [sum(1 for f in daftar if l in hasil[f]) for l in label]
+    paragraf(doc, "Setiap baris memiliki minimal 3 centang, sesuai ketentuan tugas dan matriks pada slide. "
+                  "Jumlah fungsi yang dipakai per aplikasi: "
+                  + ", ".join(f"{l} {j}" for l, j in zip(label, jumlah))
+                  + f" (total {sum(jumlah)} pemakaian).")
+
+
+def bab_bukti(doc, data_matriks):
+    daftar, hasil = data_matriks
+    judul(doc, "6. Bukti: File dan Baris Pemanggilan")
+    paragraf(doc, "Tabel berikut mencantumkan setiap fungsi, aplikasi pemakainya, nama file pemanggil, dan "
+                  "nomor baris tempat fungsi itu dipanggil. Nomor baris ini dapat diklik di MATRIKS.md pada "
+                  "repositori GitHub untuk langsung melompat ke kodenya.")
+    isi = []
+    for f in daftar:
+        for l, _ in matriks.APLIKASI:
+            if l in hasil[f]:
+                isi.append((f"`{f}`", APLIKASI_INFO[l][0], f"`{hasil[f][l]['file']}`",
+                            ", ".join(map(str, hasil[f][l]["baris"]))))
+    tabel(doc, ["Fungsi", "Aplikasi", "File pemanggil", "Baris"], isi, [2.7, 3.4, 5.4, 4.5],
+          ukuran=9)
+
+
+def bab_pengujian(doc):
+    ringkas, lulus, gagal = hasil_pytest()
+    judul(doc, "7. Pengujian")
+    paragraf(doc, f"Pengujian dijalankan dengan `pytest -v`. Hasil saat laporan ini dibuat: {ringkas} "
+                  f"({lulus} lulus, {gagal} gagal).")
+    tabel(doc, ["Kelompok pengujian", "Yang diperiksa"], [
+        ("Per fungsi library", "Kasus normal dan kasus tepi tiap fungsi: data kosong, tidak ketemu, "
+                               "kolom hilang, nilai negatif, pembulatan Rupiah."),
+        ("Contoh dari slide", "Tiga pemakaian `jumlahkan` (total belanja, total pengeluaran, nilai akhir berbobot)."),
+        ("Sifat fungsional", "Data asli tidak berubah setelah diproses; hasil sama jika dipanggil berulang."),
+        ("Docstring", "Seluruh contoh `>>>` di docstring fplib dijalankan (doctest)."),
+        ("Aturan tugas", "Setiap fungsi dipakai minimal 3 aplikasi dan sama dengan matriks di slide; "
+                         "tidak ada `import *`."),
+        ("Aplikasi", "Kelima aplikasi berjalan tanpa error dan angka kuncinya benar."),
+    ], [4.5, 11.5])
+    gambar(doc, "08_pytest_awal.png", "Awal keluaran pytest -v di Google Colab (56 pengujian terkumpul).", 10.0)
+    gambar(doc, "09_pytest_hasil_matriks.png",
+           "Akhir keluaran pytest (56 passed) dan hasil tools/matriks.py --cek.", 10.0)
+
+
+def bab_penutup(doc):
+    judul(doc, "8. Penerapan Kebiasaan Baik")
+    for t in ("Lingkungan terpisah per proyek dengan `python -m venv venv`.",
+              "Versi pustaka dicatat dengan `pip freeze > requirements.txt` agar semua anggota memakai versi sama.",
+              "Import di bagian atas file dan hanya yang dibutuhkan, mis. `from fplib import pipe, saring`. "
+              "Tidak ada `import *`, dan hal ini dicek otomatis.",
+              "Tidak mengubah kode di dalam library pihak ketiga.",
+              "Memakai fungsi yang sudah ada (`map`, `filter`, `sorted`, `sum`, `functools.reduce`) "
+              "daripada menulis ulang perulangan sendiri.",
+              "Setiap fungsi memiliki docstring sehingga bisa dibaca dengan `help(fplib.jumlahkan)`."):
+        poin(doc, t)
+    judul(doc, "9. Pembagian Tugas")
+    tabel(doc, ["No", "Nama", "NIM", "Tanggung jawab"],
+          [(i + 1, n, nim, tugas) for i, (n, nim, tugas) in enumerate(IDENTITAS["anggota"])],
+          [1.0, 4.2, 3.6, 7.2], rata_tengah=(0,), utuh=True)
+    judul(doc, "10. Kesimpulan")
+    paragraf(doc, "Kelompok berhasil membangun library `fplib.py` berisi sepuluh fungsi bergaya fungsional "
+                  "yang dipakai oleh lima aplikasi, dan setiap fungsi dipakai oleh minimal tiga aplikasi sesuai "
+                  "matriks. Pola `fungsi(aturan)(data)` membuat satu fungsi dapat melayani kebutuhan berbeda: "
+                  "`jumlahkan` yang sama menghitung total belanja, total pengeluaran, dan nilai akhir berbobot. "
+                  "Seluruh fungsi murni, terdokumentasi, dan teruji otomatis dengan pytest. Bukti pemakaian "
+                  "berupa file dan nomor baris dihasilkan langsung dari kode sehingga selalu sesuai dengan repositori.")
+    judul(doc, "Daftar Pustaka")
+    for i, t in enumerate(PUSTAKA, start=1):
+        p = paragraf(doc, f"[{i}] {t}", 10, rata=WD_ALIGN_PARAGRAPH.LEFT, sesudah=3)
+        p.paragraph_format.left_indent = Cm(0.8)
+        p.paragraph_format.first_line_indent = Cm(-0.8)
+
+
+def main():
+    sumber = sumber_fungsi()
+    daftar, hasil, masalah = matriks.bangun_matriks()
+    salah = matriks.periksa(daftar, hasil, masalah)
+    if salah:
+        print("Matriks belum memenuhi aturan, laporan tidak dibuat:\n  " + "\n  ".join(salah))
+        return 1
+    data_matriks = (daftar, hasil)
+
+    doc = Document()
+    sec = doc.sections[0]
+    sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)  # A4
+    sec.left_margin = sec.top_margin = Cm(3.0)
+    sec.right_margin = sec.bottom_margin = Cm(2.5)
+    gaya = doc.styles["Normal"]
+    gaya.font.name = FONT
+    gaya.font.size = Pt(12)
+    gaya.element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+
+    doc.core_properties.title = "Laporan Tugas Pemrograman Fungsional — fplib.py"
+    doc.core_properties.author = " & ".join(n for n, _, _ in IDENTITAS["anggota"])
+    doc.core_properties.subject = "Library fungsional untuk lima aplikasi"
+
+    sampul(doc)
+    isi = doc.add_section(WD_SECTION.NEW_PAGE)
+    isi.footer.is_linked_to_previous = False
+    nomor_halaman(isi)
+
+    bab_pendahuluan(doc)
+    bab_struktur(doc)
+    bab_fungsi(doc, sumber, data_matriks)
+    bab_aplikasi(doc, data_matriks)
+    bab_matriks(doc, data_matriks)
+    bab_bukti(doc, data_matriks)
+    bab_pengujian(doc)
+    bab_penutup(doc)
+
+    tujuan = AKAR / "laporan" / "Laporan_fplib.docx"
+    doc.save(tujuan)
+    print(f"Laporan dibuat: {tujuan.relative_to(AKAR)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
