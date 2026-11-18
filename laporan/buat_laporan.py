@@ -624,11 +624,7 @@ def bab_penutup(doc):
               "daripada menulis ulang perulangan sendiri.",
               "Setiap fungsi memiliki docstring sehingga bisa dibaca dengan `help(fplib.jumlahkan)`."):
         poin(doc, t)
-    judul(doc, "9. Pembagian Tugas")
-    tabel(doc, ["No", "Nama", "NIM", "Tanggung jawab"],
-          [(i + 1, n, nim, tugas) for i, (n, nim, tugas) in enumerate(IDENTITAS["anggota"])],
-          [1.0, 4.2, 3.6, 7.2], rata_tengah=(0,), utuh=True)
-    judul(doc, "10. Kesimpulan")
+    judul(doc, "9. Kesimpulan")
     paragraf(doc, "Kelompok berhasil membangun library `fplib.py` berisi sepuluh fungsi bergaya fungsional "
                   "yang dipakai oleh lima aplikasi, dan setiap fungsi dipakai oleh minimal tiga aplikasi sesuai "
                   "matriks. Pola `fungsi(aturan)(data)` membuat satu fungsi dapat melayani kebutuhan berbeda: "

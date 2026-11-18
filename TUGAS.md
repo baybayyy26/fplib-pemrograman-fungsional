@@ -80,7 +80,6 @@ akhir  = jumlahkan(lambda k: k["nilai"] * k["bobot"])(komponen)   # Nilai: nilai
 - [x] Matriks fungsi × aplikasi
 - [x] Bukti: file dan baris pemanggilan
 - [x] Nama anggota dan NIM di sampul
-- [x] Tabel pembagian tugas anggota
 - [x] Tautan repositori GitHub
 - [x] Kelas dan nama dosen di sampul
 

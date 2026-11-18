@@ -18,18 +18,18 @@ masing-masing berbicara sekitar 5 menit.
 
 | Menit | Pembicara | Isi | Perintah / yang ditunjukkan |
 |---|---|---|---|
-| 0:00–1:30 | Bayhaqy | Pembuka + library | Tunjukkan `fplib.py` |
+| 0:00–1:30 | Bayhaqy | Pembuka + library bagian 1: `pipe`, `ambil`, `saring`, `cari`, `urutkan` | Tunjukkan `fplib.py` |
 | 1:30–3:15 | Bayhaqy | Kasir Kantin | `python kasir_kantin.py` |
 | 3:15–5:00 | Bayhaqy | Presensi Kelas | `python presensi_kelas.py` |
-| 5:00–6:30 | Sigit | Perpustakaan Mini | `python perpustakaan_mini.py` |
+| 5:00–6:30 | Sigit | Library bagian 2 (`kelompokkan`, `jumlahkan`, `rata_rata`, `validasi`, `rupiah`) + Perpustakaan Mini | `fplib.py`, `python perpustakaan_mini.py` |
 | 6:30–8:00 | Sigit | Keuangan Pribadi | `python keuangan_pribadi.py` |
 | 8:00–9:15 | Sigit | Nilai Mahasiswa | `python nilai_mahasiswa.py` |
 | 9:15–10:00 | Sigit → Bayhaqy | pytest + matriks + penutup | `pytest -v`, `python tools/matriks.py --cek` |
-| 10:00–15:00 | Berdua | Tanya jawab | Bayhaqy: library, Kasir, Presensi. Sigit: Perpus, Keuangan, Nilai |
+| 10:00–15:00 | Berdua | Tanya jawab | Siapa pun bisa ditanya bagian mana pun; jawab bagian yang dibawakan, saling melengkapi |
 
 ## Naskah per bagian
 
-### Bayhaqy — Pembuka & library (1:30)
+### Bayhaqy — Pembuka & library bagian 1 (1:30)
 > "Kami membangun satu library, `fplib.py`, berisi 10 fungsi bergaya fungsional:
 > pipe, ambil, saring, cari, urutkan, kelompokkan, jumlahkan, rata_rata,
 > validasi, dan rupiah. Semua fungsi murni: tidak mengubah data masukan.
@@ -38,7 +38,8 @@ masing-masing berbicara sekitar 5 menit.
 > ini bisa dirangkai dengan `pipe`. Library ini dipakai lima aplikasi, dan
 > setiap fungsi dipakai minimal tiga aplikasi."
 
-Tunjukkan: `jumlahkan` (2 baris) dan `pipe` (1 baris) di `fplib.py`.
+Tunjukkan dan jelaskan singkat lima fungsi pertama: `pipe` (1 baris, `reduce`), `ambil` (`map`),
+`saring` (`filter`), `cari` (`next` + `filter`), `urutkan` (`sorted`). Lima fungsi sisanya dijelaskan Sigit.
 
 ### Bayhaqy — Kasir Kantin (1:45)
 Jalankan, lalu tunjukkan:
@@ -53,7 +54,11 @@ Jalankan, lalu tunjukkan:
 3. `saring(persen < 75)` menghasilkan **Citra, Eka** yang tidak boleh ujian.
 4. Rekap per pertemuan memakai `kelompokkan("pertemuan")` yang sama.
 
-### Sigit — Perpustakaan Mini (1:30)
+### Sigit — Library bagian 2 + Perpustakaan Mini (1:30)
+> "Lima fungsi berikutnya: `kelompokkan` memakai `reduce` untuk membuat dict baru di setiap langkah,
+> `jumlahkan` persis seperti contoh di slide, `rata_rata` aman untuk data kosong,
+> `validasi` mengembalikan daftar pesan kesalahan, dan `rupiah` memformat angka."
+
 1. Katalog: `urutkan((kategori, judul))` lalu `kelompokkan("kategori")` dalam satu `pipe`.
 2. Denda: `pipe(ambil(lengkapi_denda), saring(denda > 0), urutkan(denda ↓))`, dengan Budi terlambat 8 hari = **Rp8.000**.
 3. Permintaan pinjam: `validasi` menolak stok habis dan kode tidak ada, masing-masing dengan alasannya.

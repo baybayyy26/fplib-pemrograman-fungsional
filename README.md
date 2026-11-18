@@ -8,10 +8,10 @@ di **lima aplikasi**. Setiap fungsi dipakai oleh **minimal 3 dari 5 aplikasi**.
 
 **Anggota kelompok**
 
-| No | Nama | NIM | Bagian |
-|---|---|---|---|
-| 1 | Aditiya Al Bayhaqy | 202410370110502 | `fplib.py`, `test_fplib.py`, Kasir Kantin, Presensi Kelas, README & repositori |
-| 2 | Sigit Novriyanto | 202410370110500 | Perpustakaan Mini, Keuangan Pribadi, Nilai Mahasiswa, laporan |
+| No | Nama | NIM |
+|---|---|---|
+| 1 | Aditiya Al Bayhaqy | 202410370110502 |
+| 2 | Sigit Novriyanto | 202410370110500 |
 
 ---
 
