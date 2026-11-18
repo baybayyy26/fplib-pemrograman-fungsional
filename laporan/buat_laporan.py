@@ -50,7 +50,9 @@ IDENTITAS = {
 
 FONT = "Times New Roman"
 FONT_KODE = "Consolas"
-WARNA_AKSEN = RGBColor(0x1F, 0x3D, 0x2B)  # hijau tua seperti slide
+WARNA_AKSEN = RGBColor(0, 0, 0)  # judul hitam, format laporan formal
+LEBAR_TEKS = 14.0  # A4 21 cm - margin kiri 4 cm - kanan 3 cm
+SPASI = 1.5
 WARNA_KEPALA_TABEL = "DCE8DF"
 
 PENJELASAN = {
@@ -178,7 +180,12 @@ def sumber_fungsi():
             if (simpul.body and isinstance(simpul.body[0], ast.Expr)
                     and isinstance(simpul.body[0].value, ast.Constant)):
                 buang = set(range(simpul.body[0].lineno, simpul.body[0].end_lineno + 1))
-            kode = [baris[i - 1] for i in range(awal, akhir + 1) if i not in buang]
+            # kode inti: baris def + pernyataan return tingkat atas (kode lengkap ada di repo)
+            inti = [simpul.lineno] + [
+                n for st in simpul.body if isinstance(st, ast.Return)
+                for n in range(st.lineno, st.end_lineno + 1)
+            ]
+            kode = [f"{i:>3} | {baris[i - 1]}" for i in inti if i not in buang]
             hasil[simpul.name] = (awal, akhir, "\n".join(kode).rstrip())
     return hasil
 
@@ -220,7 +227,9 @@ def paragraf(doc, teks="", ukuran=12, tebal=False, miring=False, rata=WD_ALIGN_P
     p.alignment = rata
     p.paragraph_format.space_before = Pt(sebelum)
     p.paragraph_format.space_after = Pt(sesudah)
-    p.paragraph_format.line_spacing = 1.1
+    p.paragraph_format.line_spacing = SPASI if rata == WD_ALIGN_PARAGRAPH.JUSTIFY else 1.15
+    if rata == WD_ALIGN_PARAGRAPH.JUSTIFY and teks:
+        p.paragraph_format.first_line_indent = Cm(1.0)
     if teks:
         tambah_teks(p, teks, ukuran, tebal, miring)
     return p
@@ -242,18 +251,18 @@ def tambah_teks(p, teks, ukuran=12, tebal=False, miring=False):
 
 def judul(doc, teks, tingkat=1):
     h = doc.add_heading(level=tingkat)
-    h.paragraph_format.space_before = Pt(14 if tingkat == 1 else 8)
+    h.paragraph_format.space_before = Pt(12 if tingkat == 1 else 6)
     h.paragraph_format.space_after = Pt(6)
     h.paragraph_format.keep_with_next = True
     run = h.add_run(teks)
-    atur_font(run, 14 if tingkat == 1 else 12, tebal=True, warna=WARNA_AKSEN)
+    atur_font(run, 12, tebal=True, warna=WARNA_AKSEN)
     return h
 
 
 def poin(doc, teks):
     p = doc.add_paragraph(style="List Bullet")
     p.paragraph_format.space_after = Pt(3)
-    p.paragraph_format.line_spacing = 1.15
+    p.paragraph_format.line_spacing = SPASI
     tambah_teks(p, teks)
     return p
 
@@ -300,6 +309,8 @@ def garis_tabel(tabel, warna="8FA898"):
 
 
 def tabel(doc, kepala, isi, lebar_cm, ukuran=10, rata_tengah=(), utuh=False):
+    if sum(lebar_cm) > LEBAR_TEKS:
+        lebar_cm = [w * LEBAR_TEKS / sum(lebar_cm) for w in lebar_cm]
     t = doc.add_table(rows=1, cols=len(kepala))
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
     t.autofit = False
@@ -369,7 +380,7 @@ def gambar(doc, nama_file, keterangan, lebar_cm=13.0):
     tambah_teks(k, keterangan, 10, miring=True)
 
 
-def gambar_grid(doc, daftar, lebar_cm=7.6):
+def gambar_grid(doc, daftar, lebar_cm=6.4):
     """Susun beberapa screenshot dalam tabel 2 kolom tanpa garis; tiap sel = gambar + keterangan."""
     baris = [daftar[i:i + 2] for i in range(0, len(daftar), 2)]
     t = doc.add_table(rows=len(baris), cols=2)
@@ -418,27 +429,29 @@ def ganti_halaman(doc):
 # Isi laporan
 # ---------------------------------------------------------------------------
 def sampul(doc):
-    for _ in range(3):
-        paragraf(doc)
-    paragraf(doc, "LAPORAN TUGAS", 16, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=2)
-    paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 16, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=18)
-    p = paragraf(doc, "", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=4)
-    run = p.add_run("Membangun Library Fungsional Sendiri:")
-    atur_font(run, 14, tebal=True, warna=WARNA_AKSEN)
-    p = paragraf(doc, "", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=40)
-    run = p.add_run("fplib.py untuk Lima Aplikasi")
-    atur_font(run, 14, tebal=True, warna=WARNA_AKSEN)
+    """Sampul format umum laporan UMM: judul, logo, penyusun, dosen, institusi, tahun."""
+    tengah = WD_ALIGN_PARAGRAPH.CENTER
+    paragraf(doc, "LAPORAN TUGAS", 14, tebal=True, rata=tengah, sesudah=0)
+    paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 14, tebal=True, rata=tengah, sesudah=0)
+    paragraf(doc, f"Kelas {IDENTITAS['kelas'].split()[-1]}", 12, rata=tengah, sesudah=18)
+    paragraf(doc, "Membangun Library Fungsional Sendiri:", 13, tebal=True, rata=tengah, sesudah=0)
+    paragraf(doc, "fplib.py untuk Lima Aplikasi", 13, tebal=True, rata=tengah, sesudah=42)
 
-    paragraf(doc, f"Kelas: {IDENTITAS['kelas']}", rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=10)
-    t = tabel(doc, ["No", "Nama", "NIM"],
-              [(i + 1, n, nim) for i, (n, nim, _) in enumerate(IDENTITAS["anggota"])],
-              [1.2, 7.5, 4.5], ukuran=11, rata_tengah=(0, 2), utuh=True)
-    t.alignment = WD_TABLE_ALIGNMENT.CENTER
-    paragraf(doc, f"Dosen Pengampu: {IDENTITAS['dosen']}", rata=WD_ALIGN_PARAGRAPH.CENTER, sebelum=10, sesudah=60)
+    logo = GAMBAR / "00_logo_umm.png"
+    if logo.exists():
+        p = paragraf(doc, "", rata=tengah, sesudah=42)
+        p.add_run().add_picture(str(logo), width=Cm(5.0))
+
+    paragraf(doc, "Disusun oleh:", 12, rata=tengah, sesudah=4)
+    for nama, nim, _ in IDENTITAS["anggota"]:
+        paragraf(doc, f"{nama} ({nim})", 12, rata=tengah, sesudah=0)
+
+    paragraf(doc, "Dosen Pengampu:", 12, rata=tengah, sebelum=18, sesudah=0)
+    paragraf(doc, IDENTITAS["dosen"], 12, tebal=True, rata=tengah, sesudah=96)
 
     for teks in ("PROGRAM STUDI INFORMATIKA", "FAKULTAS TEKNIK",
                  "UNIVERSITAS MUHAMMADIYAH MALANG", "2026"):
-        paragraf(doc, teks, 13, tebal=True, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=2)
+        paragraf(doc, teks, 14, tebal=True, rata=tengah, sesudah=0)
 
 
 def bab_pendahuluan(doc):
@@ -478,14 +491,9 @@ def bab_pendahuluan(doc):
 def bab_struktur(doc):
     judul(doc, "2. Struktur Repositori dan Cara Menjalankan")
     paragraf(doc, f"Repositori: {IDENTITAS['repo']}")
-    tabel(doc, ["File", "Isi"], [
-        ("`fplib.py`", "Library: 10 fungsi fungsional"),
-        ("`test_fplib.py`", "Pengujian pytest untuk library, kelima aplikasi, dan aturan matriks"),
-        ("`kasir_kantin.py` … `nilai_mahasiswa.py`", "Lima aplikasi yang bisa dijalankan"),
-        ("`README.md`", "Daftar fungsi dan cara pakai"),
-        ("`MATRIKS.md`, `tools/matriks.py`", "Matriks fungsi × aplikasi beserta file & baris (dibuat otomatis)"),
-        ("`requirements.txt`", "Versi pustaka hasil `pip freeze`"),
-    ], [6.5, 9.5])
+    paragraf(doc, "Repositori berisi `fplib.py`, `test_fplib.py`, lima file aplikasi, README (daftar fungsi dan "
+                  "cara pakai), `MATRIKS.md` beserta pemindainya `tools/matriks.py`, dan `requirements.txt`. "
+                  "Cara menjalankannya:")
     blok_kode(doc, "python -m venv venv\n"
                    "venv\\Scripts\\activate            # Linux/macOS: source venv/bin/activate\n"
                    "pip install -r requirements.txt\n\n"
@@ -494,8 +502,7 @@ def bab_struktur(doc):
                    "pytest -v                        # jalankan pengujian\n"
                    "python tools/matriks.py --cek    # cek aturan minimal 3 aplikasi")
     paragraf(doc, "Seluruh program juga dijalankan di Google Colab langsung dari repositori GitHub. "
-                  "Gambar-gambar pada bab 4 dan bab 7 adalah tangkapan layar asli dari notebook tersebut.")
-    gambar(doc, "01_repo_github.png", "Repositori GitHub baybayyy26/fplib-pemrograman-fungsional.", 10.5)
+                  "Gambar pada bab 4 dan bab 7 adalah tangkapan layar asli dari notebook tersebut.")
 
 
 def bab_fungsi(doc, sumber, data_matriks):
@@ -503,8 +510,9 @@ def bab_fungsi(doc, sumber, data_matriks):
     judul(doc, "3. Penjelasan Tiap Fungsi Library")
     paragraf(doc, "Parameter `kunci`/`nilai` boleh berupa nama kolom (mis. `\"nilai\"`) atau fungsi. "
                   "Nama kolom diubah menjadi fungsi oleh pembantu internal `_ke_fungsi` "
-                  f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Kode di bawah "
-                  "diambil langsung dari fplib.py (docstring tidak ditampilkan).")
+                  f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Potongan kode di "
+                  "bawah adalah baris inti (definisi dan return) yang diambil langsung dari fplib.py beserta "
+                  "nomor barisnya; kode lengkap ada di repositori.")
     for i, f in enumerate(daftar, start=1):
         awal, akhir, kode = sumber[f]
         kegunaan, cara, contoh = PENJELASAN[f]
@@ -521,8 +529,7 @@ def bab_fungsi(doc, sumber, data_matriks):
         tambah_teks(p, f"`{contoh}`")
         p = paragraf(doc, sesudah=8)
         tambah_teks(p, "Dipakai di: ", tebal=True)
-        tambah_teks(p, ", ".join(f"{APLIKASI_INFO[l][0]} (`{hasil[f][l]['file']}`)" for l in hasil[f])
-                    + f" — {len(hasil[f])} aplikasi.")
+        tambah_teks(p, f"{len(hasil[f])} aplikasi ({', '.join(hasil[f])}); rincian baris di bab 6.")
 
 
 def bab_aplikasi(doc, data_matriks):
@@ -574,17 +581,17 @@ def bab_matriks(doc, data_matriks):
 def bab_bukti(doc, data_matriks):
     daftar, hasil = data_matriks
     judul(doc, "6. Bukti: File dan Baris Pemanggilan")
-    paragraf(doc, "Tabel berikut mencantumkan setiap fungsi, aplikasi pemakainya, nama file pemanggil, dan "
-                  "nomor baris tempat fungsi itu dipanggil. Nomor baris ini dapat diklik di MATRIKS.md pada "
+    paragraf(doc, "Tabel berikut mencantumkan setiap fungsi, nama file pemanggilnya, dan nomor baris "
+                  "tempat fungsi itu dipanggil. Nomor baris ini dapat diklik di MATRIKS.md pada "
                   "repositori GitHub untuk langsung melompat ke kodenya.")
-    isi = []
-    for f in daftar:
-        for l, _ in matriks.APLIKASI:
-            if l in hasil[f]:
-                isi.append((f"`{f}`", APLIKASI_INFO[l][0], f"`{hasil[f][l]['file']}`",
-                            ", ".join(map(str, hasil[f][l]["baris"]))))
-    tabel(doc, ["Fungsi", "Aplikasi", "File pemanggil", "Baris"], isi, [2.7, 3.4, 5.4, 4.5],
-          ukuran=9)
+    isi = [
+        (f"`{f}`", "; ".join(
+            f"`{hasil[f][l]['file']}` baris {', '.join(map(str, hasil[f][l]['baris']))}"
+            for l, _ in matriks.APLIKASI if l in hasil[f]
+        ))
+        for f in daftar
+    ]
+    tabel(doc, ["Fungsi", "File pemanggil dan nomor baris"], isi, [2.4, 11.6], ukuran=9)
 
 
 def bab_pengujian(doc):
@@ -604,7 +611,7 @@ def bab_pengujian(doc):
         ("Mode interaktif", "Input pengguna disimulasikan; input salah ditolak `validasi`, input terputus tidak crash."),
     ], [4.5, 11.5])
     gambar(doc, "09_pytest_hasil_matriks.png",
-           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 9.0)
+           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 8.0)
 
 
 def bab_penutup(doc):
@@ -648,8 +655,8 @@ def main():
     doc = Document()
     sec = doc.sections[0]
     sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)  # A4
-    sec.left_margin = sec.top_margin = Cm(3.0)
-    sec.right_margin = sec.bottom_margin = Cm(2.5)
+    sec.left_margin = Cm(4.0)
+    sec.top_margin = sec.right_margin = sec.bottom_margin = Cm(3.0)
     gaya = doc.styles["Normal"]
     gaya.font.name = FONT
     gaya.font.size = Pt(12)
