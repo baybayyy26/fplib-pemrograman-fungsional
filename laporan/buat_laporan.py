@@ -144,7 +144,22 @@ GAMBAR_APLIKASI = {
     "Nilai": "07_nilai_mahasiswa.png",
 }
 LEBAR_GAMBAR_APLIKASI = 8.5
-LEBAR_GAMBAR_KODE = 9.0
+CM_PER_PX_KODE = 13.0 / 1047     # huruf kode sekitar 0,17 cm per karakter
+CM_PER_PX_KELUARAN = 0.0160      # ukuran huruf keluaran setara dengan huruf kode
+KETERANGAN_KELUARAN = {
+    "Kasir": "pesanan ditolak, keranjang, dan total",
+    "Presensi": "rekap kehadiran per mahasiswa",
+    "Perpus": "denda keterlambatan dan permintaan pinjam",
+    "Keuangan": "rekap pengeluaran dan saldo",
+    "Nilai": "data tidak valid dan peringkat",
+}
+
+
+def lebar_gambar(nama_file, cm_per_px):
+    """Lebar cetak (cm) sebanding dengan lebar piksel, supaya ukuran huruf di semua gambar sama."""
+    from PIL import Image
+    with Image.open(GAMBAR / nama_file) as im:
+        return min(LEBAR_TEKS, im.width * cm_per_px)
 
 PUSTAKA = [
     "Python Software Foundation. Functional Programming HOWTO. "
@@ -228,7 +243,7 @@ def paragraf(doc, teks="", ukuran=12, tebal=False, miring=False, rata=WD_ALIGN_P
     p.paragraph_format.space_before = Pt(sebelum)
     p.paragraph_format.space_after = Pt(sesudah)
     p.paragraph_format.line_spacing = SPASI if rata == WD_ALIGN_PARAGRAPH.JUSTIFY else 1.15
-    if rata == WD_ALIGN_PARAGRAPH.JUSTIFY and teks:
+    if rata == WD_ALIGN_PARAGRAPH.JUSTIFY:
         p.paragraph_format.first_line_indent = Cm(1.0)
     if teks:
         tambah_teks(p, teks, ukuran, tebal, miring)
@@ -262,7 +277,7 @@ def judul(doc, teks, tingkat=1):
 def poin(doc, teks):
     p = doc.add_paragraph(style="List Bullet")
     p.paragraph_format.space_after = Pt(3)
-    p.paragraph_format.line_spacing = SPASI
+    p.paragraph_format.line_spacing = 1.15
     tambah_teks(p, teks)
     return p
 
@@ -483,7 +498,7 @@ def bab_pendahuluan(doc):
         ("Komposisi", "`pipe(f, g, h)` merangkai beberapa fungsi menjadi satu alur pemrosesan."),
         ("Map, filter, reduce", "`map` dipakai di `ambil`, `jumlahkan`, `rata_rata`, dan `validasi`; `filter` di `saring`, "
                                 "`cari`, dan `validasi`; `reduce` di `pipe` dan `kelompokkan` [2]."),
-    ], [4.0, 12.0])
+    ], [4.0, 12.0], ukuran=10)
     paragraf(doc, "Seluruh fungsi kecuali `rupiah` dipakai dengan pola `fungsi(aturan)(data)`. Pemanggilan pertama "
                   "menerima aturan dan menghasilkan fungsi baru yang menunggu data. Karena itu, fungsi-fungsi "
                   "tersebut dapat dirangkai dengan `pipe`.")
@@ -491,7 +506,10 @@ def bab_pendahuluan(doc):
 
 def bab_struktur(doc):
     judul(doc, "2. Struktur Repositori dan Cara Menjalankan")
-    paragraf(doc, f"Repositori: {IDENTITAS['repo']}")
+    p = paragraf(doc, f"Seluruh kode program tersimpan di repositori GitHub {IDENTITAS['repo']}.",
+                 rata=WD_ALIGN_PARAGRAPH.LEFT)
+    p.paragraph_format.first_line_indent = Cm(1.0)
+    p.paragraph_format.line_spacing = SPASI
     paragraf(doc, "Repositori antara lain berisi `fplib.py`, `test_fplib.py`, lima berkas aplikasi, README (daftar fungsi "
                   "dan cara pakai), `MATRIKS.md` beserta pemindainya `tools/matriks.py`, dan `requirements.txt`. "
                   "Perintah untuk menjalankannya dirangkum pada tabel berikut [6].", sesudah=4)
@@ -503,10 +521,7 @@ def bab_struktur(doc):
         ("`python kasir_kantin.py --interaktif`", "Menjalankan aplikasi dengan data yang diketik pengguna."),
         ("`pytest -v`", "Menjalankan seluruh pengujian."),
         ("`python tools/matriks.py --cek`", "Memeriksa aturan minimal tiga aplikasi per fungsi."),
-    ], [6.2, 7.8], ukuran=11)
-    paragraf(doc, "Seluruh program juga dijalankan di Google Colab langsung dari repositori GitHub. "
-                  "Gambar kode pada bab 3 serta gambar keluaran pada bab 4 dan bab 7 adalah tangkapan layar "
-                  "asli dari notebook tersebut.")
+    ], [6.2, 7.8], ukuran=10)
 
 
 def bab_fungsi(doc, sumber, data_matriks):
@@ -517,7 +532,8 @@ def bab_fungsi(doc, sumber, data_matriks):
                   f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Setiap gambar kode "
                   "di bawah diambil dari editor Google Colab dengan docstring dilipat, sehingga yang tampak "
                   "hanya baris inti beserta nomor baris aslinya. Isi docstring, termasuk contoh pemakaiannya, "
-                  "dapat dibaca di repositori.")
+                  "dapat dibaca di repositori. Aplikasi yang memakai setiap fungsi tercantum pada matriks di bab 5 "
+                  "dan nomor baris pemanggilannya di bab 6.")
     for i, f in enumerate(daftar, start=1):
         awal, akhir, _ = sumber[f]
         kegunaan, cara = PENJELASAN[f]
@@ -529,10 +545,7 @@ def bab_fungsi(doc, sumber, data_matriks):
         tambah_teks(p, "Cara kerja: ", tebal=True)
         tambah_teks(p, cara)
         gambar(doc, f"kode_{f}.png", f"Kode `{f}` di editor Google Colab (docstring dilipat)",
-               LEBAR_GAMBAR_KODE, kecil=True)
-        p = paragraf(doc, sesudah=8)
-        tambah_teks(p, "Dipakai di: ", tebal=True)
-        tambah_teks(p, f"{len(hasil[f])} aplikasi ({', '.join(hasil[f])}); rincian baris ada di bab 6.")
+               lebar_gambar(f"kode_{f}.png", CM_PER_PX_KODE), kecil=True)
 
 
 def bab_aplikasi(doc, data_matriks):
@@ -540,14 +553,16 @@ def bab_aplikasi(doc, data_matriks):
     judul(doc, "4. Lima Aplikasi")
     paragraf(doc, "Setiap aplikasi memiliki dua mode. Tanpa argumen, aplikasi memakai data contoh (dipakai saat "
                   "demo); dengan `--interaktif`, aplikasi menerima data yang diketik pengguna. Kedua mode memakai "
-                  "fungsi logika yang sama karena `main` menerima data sebagai argumen.")
+                  "fungsi logika yang sama karena `main` menerima data sebagai argumen. Gambar di setiap subbab "
+                  "adalah potongan keluaran asli dari notebook Google Colab yang mengambil (clone) repositori "
+                  "GitHub; keluaran lengkap ditampilkan saat demo.")
     for i, (label, (nama, berkas, uraian)) in enumerate(APLIKASI_INFO.items(), start=1):
         dipakai = [f for f in daftar if label in hasil[f]]
         judul(doc, f"4.{i} {nama} ({berkas})", 2)
-        paragraf(doc, uraian, sesudah=3)
-        p = paragraf(doc, sesudah=4)
-        tambah_teks(p, f"Fungsi fplib ({len(dipakai)}): ", tebal=True)
-        tambah_teks(p, ", ".join(f"`{f}`" for f in dipakai))
+        paragraf(doc, uraian + f" Aplikasi ini memakai {len(dipakai)} fungsi fplib.", sesudah=3)
+        berkas_gambar = GAMBAR_APLIKASI[label]
+        gambar(doc, berkas_gambar, f"Potongan keluaran `{berkas}` di Google Colab: {KETERANGAN_KELUARAN[label]}",
+               lebar_gambar(berkas_gambar, CM_PER_PX_KELUARAN), kecil=True)
 
 
 
@@ -603,25 +618,25 @@ def bab_pengujian(doc):
     paragraf(doc, f"Pengujian dijalankan dengan `pytest -v` [7]. Saat laporan ini dibuat, {lulus} pengujian "
                   f"lulus dan {gagal} gagal.")
     tabel(doc, ["Kelompok pengujian", "Yang diperiksa"], [
-        ("Per fungsi library", "Kasus normal dan kasus tepi tiap fungsi: data kosong, data tidak ditemukan, "
-                               "kolom hilang, nilai negatif, dan pembulatan rupiah."),
+        ("Per fungsi library", "Kasus normal dan kasus tepi tiap fungsi (data kosong, data tidak ditemukan, "
+                               "kolom hilang, nilai negatif, pembulatan rupiah) serta contoh di docstring (doctest)."),
         ("Contoh dari slide", "Tiga pemakaian `jumlahkan` (total belanja, total pengeluaran, nilai akhir berbobot)."),
         ("Sifat fungsional", "Data asli tidak berubah setelah diproses, dan hasilnya tetap sama jika dipanggil berulang."),
-        ("Docstring", "Seluruh contoh di docstring fplib dijalankan dengan doctest."),
         ("Aturan tugas", "Setiap fungsi dipakai oleh minimal tiga aplikasi dan sesuai dengan matriks di slide; "
                          "tidak ada impor bintang (impor semua nama sekaligus)."),
         ("Aplikasi", "Kelima aplikasi berjalan tanpa galat dan angka utamanya benar."),
         ("Mode interaktif", "Masukan pengguna disimulasikan; masukan salah ditolak `validasi`, dan masukan yang terhenti (EOF) "
                             "tidak membuat program berhenti mendadak."),
-    ], [4.5, 11.5])
+    ], [4.5, 11.5], ukuran=10)
     gambar(doc, "09_pytest_hasil_matriks.png",
-           f"Keluaran akhir `pytest` ({lulus} passed) dan `tools/matriks.py --cek`", 6.0)
+           f"Keluaran akhir `pytest` ({lulus} passed) dan `tools/matriks.py --cek` di Google Colab",
+           lebar_gambar("09_pytest_hasil_matriks.png", CM_PER_PX_KELUARAN))
 
 
 def bab_penutup(doc):
     judul(doc, "8. Penerapan Kebiasaan Baik")
-    for t in ("Proyek ini memakai lingkungan terpisah yang dibuat dengan `python -m venv venv` [6].",
-              "Versi library dicatat dengan `pip freeze > requirements.txt` agar semua anggota memakai versi yang sama.",
+    for t in ("Proyek memakai lingkungan terpisah (`python -m venv venv`) [6], dan versi library dicatat dengan "
+              "`pip freeze > requirements.txt` agar semua anggota memakai versi yang sama.",
               "Impor ditulis di bagian atas berkas dan hanya untuk nama yang dibutuhkan, misalnya "
               "`from fplib import pipe, saring`. Impor bintang tidak dipakai, dan hal ini diperiksa otomatis.",
               "Fungsi yang sudah tersedia (`map`, `filter`, `sorted`, `sum`, `functools.reduce`) dipakai "
@@ -676,7 +691,6 @@ def main():
     bab_struktur(doc)
     bab_fungsi(doc, sumber, data_matriks)
     bab_aplikasi(doc, data_matriks)
-    bab_bukti_jalan(doc)
     bab_matriks(doc, data_matriks)
     bab_bukti(doc, data_matriks)
     bab_pengujian(doc)
