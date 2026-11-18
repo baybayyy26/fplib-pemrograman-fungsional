@@ -57,90 +57,83 @@ WARNA_KEPALA_TABEL = "DCE8DF"
 
 PENJELASAN = {
     "pipe": (
-        "Merangkai beberapa fungsi menjadi satu alur yang dijalankan dari kiri ke kanan: "
-        "pipe(f, g, h)(data) sama dengan h(g(f(data))). Tanpa langkah sama sekali, pipe() "
-        "mengembalikan data apa adanya.",
-        "Memakai functools.reduce: dimulai dari data, lalu setiap fungsi di dalam langkah "
-        "menerima hasil fungsi sebelumnya. Karena semua fungsi fplib menghasilkan fungsi "
-        "berbentuk f(data), semuanya bisa disusun di dalam pipe.",
-        'pipe(saring(lambda m: m["nilai"] >= 70), urutkan("nilai", menurun=True), ambil("nama"))(data)',
+        "Merangkai beberapa fungsi menjadi satu alur yang dijalankan dari kiri ke kanan, sehingga "
+        "`pipe(f, g, h)(data)` sama dengan `h(g(f(data)))`. Tanpa langkah, `pipe()` menghasilkan fungsi "
+        "yang mengembalikan data apa adanya.",
+        "Fungsi ini memakai `reduce` dari modul `functools` [2]. Proses dimulai dari data, lalu setiap "
+        "fungsi di dalam `langkah` menerima hasil fungsi sebelumnya.",
     ),
     "ambil": (
-        "Mengambil atau mengubah setiap elemen data (versi fungsional dari map). "
-        'ambil("nama") menghasilkan daftar nilai satu kolom, ambil("nama", "nilai") menghasilkan '
-        "dict berisi kolom-kolom itu saja, dan ambil(fungsi) menerapkan fungsi ke tiap elemen.",
-        "Kunci diubah menjadi fungsi pengubah, lalu dijalankan dengan map dan dibungkus list. "
-        "Di aplikasi, ambil juga dipakai untuk mengubah setiap data menjadi satu baris teks tampilan.",
-        'ambil("nama")(data)  ->  ["Ani", "Budi", "Citra"]',
+        "Mengubah setiap elemen data, seperti `map`. Pemanggilan `ambil(\"nama\")` menghasilkan daftar nilai "
+        "satu kolom, `ambil(\"nama\", \"nilai\")` menghasilkan daftar dict berisi kolom tersebut, dan "
+        "`ambil(fungsi)` menerapkan fungsi ke setiap elemen.",
+        "Kunci diubah menjadi fungsi pengubah, lalu dijalankan dengan `map` dan hasilnya dibungkus `list`. "
+        "Di aplikasi, `ambil` juga dipakai untuk mengubah setiap data menjadi satu baris teks tampilan.",
     ),
     "saring": (
-        "Memilih elemen yang memenuhi syarat (predikat), versi fungsional dari filter.",
-        "Membungkus filter bawaan Python dan mengubah hasilnya menjadi list baru; data asli tidak berubah.",
-        'saring(lambda m: m["kelas"] == "A")(data)',
+        "Memilih elemen yang memenuhi syarat (predikat), seperti `filter`.",
+        "Fungsi ini membungkus `filter` bawaan Python [3] dan mengubah hasilnya menjadi list baru, "
+        "sehingga data asli tidak berubah.",
     ),
     "cari": (
-        "Mengembalikan elemen PERTAMA yang memenuhi syarat, atau nilai bawaan (None) jika tidak ada.",
-        "next(filter(predikat, data), bawaan): filter bersifat malas sehingga pencarian berhenti "
-        "begitu elemen pertama ditemukan; jika tidak ada, next mengembalikan bawaan, bukan error.",
-        'cari(lambda m: m["kode"] == "M02")(MENU)',
+        "Mengembalikan elemen pertama yang memenuhi syarat, atau nilai bawaan (`None`) jika tidak ada.",
+        "Fungsi ini memakai `next(filter(predikat, data), bawaan)`. Karena `filter` bersifat malas (lazy), "
+        "pencarian berhenti begitu elemen pertama ditemukan; jika tidak ada, `next` mengembalikan nilai "
+        "bawaan tanpa galat [3].",
     ),
     "urutkan": (
-        "Mengurutkan data berdasarkan kunci, naik atau menurun, tanpa mengubah data asli.",
-        "Memakai sorted (membuat list baru, berbeda dengan list.sort yang mengubah list asli). "
-        "sorted bersifat stabil, dan kunci boleh berupa tuple untuk pengurutan bertingkat.",
-        'urutkan("akhir", menurun=True)(daftar_mahasiswa)',
+        "Mengurutkan data berdasarkan kunci, menaik atau menurun, tanpa mengubah data asli.",
+        "Fungsi ini memakai `sorted`, yang membuat list baru (berbeda dengan `list.sort` yang mengubah list "
+        "asli). Pengurutannya stabil [4]; untuk urutan bertingkat, kunci berupa fungsi yang menghasilkan tuple.",
     ),
     "kelompokkan": (
-        "Mengelompokkan data menjadi dict {nilai_kunci: [elemen, ...]} dengan urutan kemunculan tetap.",
-        "Memakai reduce dengan dict kosong sebagai awal. Setiap langkah membuat dict BARU "
-        "({**lama, k: lama.get(k, []) + [item]}) sehingga tidak ada struktur yang diubah. "
-        "Berbeda dengan itertools.groupby, data tidak perlu diurutkan terlebih dahulu.",
-        'kelompokkan("kategori")(pengeluaran)',
+        "Mengelompokkan data menjadi dict berbentuk kunci dan daftar elemen, dengan urutan kemunculan tetap.",
+        "Fungsi ini memakai `reduce` dengan dict kosong sebagai nilai awal. Setiap langkah membuat dict "
+        "baru yang berisi kelompok lama ditambah elemen berikutnya, sehingga tidak ada struktur yang diubah. "
+        "Berbeda dengan `itertools.groupby`, data tidak perlu diurutkan terlebih dahulu.",
     ),
     "jumlahkan": (
-        "Menjumlahkan nilai setiap elemen. Fungsi ini sama persis dengan contoh di slide: "
-        "fungsinya sama, yang berbeda hanya cara menghitung nilai yang dikirim sebagai argumen.",
-        "sum(map(f, data)): map menghitung nilai tiap elemen, sum menjumlahkannya. Data kosong menghasilkan 0.",
-        'jumlahkan(lambda i: i["harga"] * i["qty"])(keranjang)',
+        "Menjumlahkan nilai setiap elemen. Fungsi ini mengikuti contoh di slide; yang berbeda antaraplikasi "
+        "hanya fungsi nilai yang dikirim sebagai argumen.",
+        "Rumusnya `sum(map(f, data))`, dengan `f` hasil `_ke_fungsi`: `map` menghitung nilai tiap elemen, "
+        "lalu `sum` menjumlahkannya. Data kosong menghasilkan 0.",
     ),
     "rata_rata": (
-        "Menghitung rata-rata nilai setiap elemen; data kosong menghasilkan 0.0 (tidak error).",
-        "Nilai dihitung dengan map, lalu sum dibagi len. Pembagian dengan nol dicegah. "
-        "Di Presensi, rata-rata dari nilai 100/0 dipakai sebagai persentase kehadiran.",
-        'rata_rata("akhir")(peringkat)',
+        "Menghitung rata-rata nilai seluruh elemen; data kosong menghasilkan 0,0 tanpa galat.",
+        "Nilai dihitung dengan `map`, lalu jumlahnya dibagi dengan banyaknya data. Di Presensi, rata-rata nilai 100 "
+        "(hadir) atau 0 (tidak hadir) menjadi persentase kehadiran.",
     ),
     "validasi": (
-        "Membuat pemeriksa data dari pasangan (syarat, pesan_kesalahan). Pemeriksa menerima satu "
-        "elemen dan mengembalikan daftar pesan kesalahan; daftar kosong berarti valid.",
-        "Aturan yang tidak lolos disaring (filter), lalu diambil pesannya (map). Syarat yang "
-        "menimbulkan error, misalnya kolom tidak ada, dianggap gagal sehingga program tidak berhenti.",
-        'validasi((lambda t: t["nominal"] > 0, "nominal harus lebih dari 0"))(transaksi)',
+        "Membuat pemeriksa data dari pasangan (syarat, pesan kesalahan). Pemeriksa menerima satu elemen "
+        "dan mengembalikan daftar pesan kesalahan; daftar kosong berarti data valid.",
+        "Aturan yang tidak lolos disaring dengan `filter`, lalu pesannya diambil dengan `map`. Syarat yang "
+        "menimbulkan galat umum, seperti `KeyError` karena kolom tidak ada, dianggap gagal sehingga program tidak berhenti.",
     ),
     "rupiah": (
-        "Memformat angka menjadi teks Rupiah dengan pemisah titik, misalnya 1500000 -> Rp1.500.000.",
-        "Dibulatkan setengah ke atas dengan int(abs(x) + 0.5) karena round() bawaan memakai "
-        "banker's rounding. Pemisah ribuan ',' diganti '.'. Fungsi ini langsung mengembalikan "
-        "teks sehingga bisa dikirim ke fungsi lain, misalnya ambil(rupiah).",
-        "rupiah(1500000)  ->  'Rp1.500.000'",
+        "Memformat angka menjadi teks rupiah berpemisah titik, misalnya 1500000 menjadi Rp1.500.000.",
+        "Angka dibulatkan setengah ke atas dengan `int(abs(angka) + 0.5)` karena `round()` memakai "
+        "banker's rounding (2,5 menjadi 2). Karena menerima satu angka dan langsung mengembalikan teks, "
+        "`rupiah` dapat dioper ke fungsi lain, misalnya `ambil(rupiah)`.",
     ),
 }
 
 APLIKASI_INFO = {
     "Kasir": ("Kasir Kantin", "kasir_kantin.py",
-              "Menampilkan menu, menolak pesanan yang salah (qty 0 atau kode tidak ada), membentuk keranjang "
-              "dengan pipe(saring, ambil, urutkan), lalu menghitung total belanja, uang dibayar, dan kembalian."),
+              "Menampilkan menu, menolak pesanan yang salah (jumlah 0 atau kode tidak ada), membentuk keranjang "
+              "dengan `pipe`, `saring`, `ambil`, dan `urutkan`, lalu menghitung total belanja, uang yang dibayar, "
+              "dan kembalian."),
     "Presensi": ("Presensi Kelas", "presensi_kelas.py",
-                 "Mengelompokkan catatan kehadiran per mahasiswa dan per pertemuan, menghitung persentase hadir "
-                 "dengan rata_rata, dan menyaring mahasiswa dengan kehadiran di bawah 75%."),
+                 "Mengelompokkan catatan kehadiran per mahasiswa dan per pertemuan, menghitung persentase "
+                 "kehadiran dengan `rata_rata`, dan menyaring mahasiswa yang kehadirannya di bawah 75%."),
     "Perpus": ("Perpustakaan Mini", "perpustakaan_mini.py",
                "Menampilkan katalog per kategori beserta sisa stok, menghitung denda keterlambatan "
-               "(batas 7 hari, Rp1.000/hari), dan memvalidasi permintaan pinjam baru."),
+               "(batas 7 hari, Rp1.000 per hari), dan memvalidasi permintaan peminjaman baru."),
     "Keuangan": ("Keuangan Pribadi", "keuangan_pribadi.py",
-                 "Mengabaikan transaksi tidak valid, menghitung total pemasukan, pengeluaran, dan saldo, "
-                 "merekap pengeluaran per kategori, serta rata-rata per pengeluaran."),
+                 "Memisahkan transaksi tidak valid, lalu menghitung pemasukan, pengeluaran, saldo, rekap "
+                 "pengeluaran per kategori, dan rata-rata nominal pengeluaran."),
     "Nilai": ("Nilai Mahasiswa", "nilai_mahasiswa.py",
-              "Memvalidasi komponen nilai, menghitung nilai akhir berbobot, menentukan nilai huruf "
-              "dengan cari, menyusun peringkat, serta rata-rata kelas dan jumlah yang lulus."),
+              "Memvalidasi komponen nilai, menghitung nilai akhir berbobot, menentukan nilai huruf dengan "
+              "`cari`, menyusun peringkat, serta menghitung rata-rata kelas dan jumlah mahasiswa yang lulus."),
 }
 
 GAMBAR_APLIKASI = {
@@ -151,17 +144,24 @@ GAMBAR_APLIKASI = {
     "Nilai": "07_nilai_mahasiswa.png",
 }
 LEBAR_GAMBAR_APLIKASI = 8.5
+LEBAR_GAMBAR_KODE = 9.0
 
 PUSTAKA = [
-    "Python Software Foundation. Functional Programming HOWTO. https://docs.python.org/3/howto/functional.html",
+    "Python Software Foundation. Functional Programming HOWTO. "
+    "https://docs.python.org/3/howto/functional.html. Diakses 18 November 2026.",
     "Python Software Foundation. functools — Higher-order functions and operations on callable objects. "
-    "https://docs.python.org/3/library/functools.html",
-    "Python Software Foundation. Built-in Functions (map, filter, sorted, sum, next). "
-    "https://docs.python.org/3/library/functions.html",
-    "Python Software Foundation. Sorting Techniques. https://docs.python.org/3/howto/sorting.html",
-    "Python Software Foundation. ast — Abstract Syntax Trees. https://docs.python.org/3/library/ast.html",
-    "Python Software Foundation. venv — Creation of virtual environments. https://docs.python.org/3/library/venv.html",
-    "pytest-dev. pytest documentation. https://docs.pytest.org/",
+    "https://docs.python.org/3/library/functools.html. Diakses 18 November 2026.",
+    "Python Software Foundation. Built-in Functions. "
+    "https://docs.python.org/3/library/functions.html. Diakses 18 November 2026.",
+    "Python Software Foundation. Sorting Techniques. "
+    "https://docs.python.org/3/howto/sorting.html. Diakses 18 November 2026.",
+    "Python Software Foundation. ast — Abstract Syntax Trees. "
+    "https://docs.python.org/3/library/ast.html. Diakses 18 November 2026.",
+    "Python Software Foundation. venv — Creation of virtual environments. "
+    "https://docs.python.org/3/library/venv.html. Diakses 18 November 2026.",
+    "pytest-dev. pytest documentation. https://docs.pytest.org/. Diakses 18 November 2026.",
+    "Python Software Foundation. The Python Tutorial: Modules. "
+    "https://docs.python.org/3/tutorial/modules.html. Diakses 18 November 2026.",
 ]
 
 
@@ -236,7 +236,7 @@ def paragraf(doc, teks="", ukuran=12, tebal=False, miring=False, rata=WD_ALIGN_P
 
 
 def tambah_teks(p, teks, ukuran=12, tebal=False, miring=False):
-    """Teks di antara `backtick` ditulis dengan huruf kode."""
+    """Teks di antara `backtick` (nama fungsi, berkas, perintah) dicetak miring dengan huruf yang sama."""
     for i, bagian in enumerate(re.split(r"`([^`]*)`", teks)):
         if not bagian:
             continue
@@ -244,7 +244,7 @@ def tambah_teks(p, teks, ukuran=12, tebal=False, miring=False):
         if re.search(r"\[[A-Z][^\]]*\]", bagian):
             run.font.highlight_color = WD_COLOR_INDEX.YELLOW
         if i % 2:
-            atur_font(run, ukuran - 1, tebal, miring, nama=FONT_KODE)
+            atur_font(run, ukuran, tebal, True)
         else:
             atur_font(run, ukuran, tebal, miring)
 
@@ -364,7 +364,7 @@ GAMBAR = AKAR / "laporan" / "gambar"
 _nomor_gambar = [0]
 
 
-def gambar(doc, nama_file, keterangan, lebar_cm=13.0):
+def gambar(doc, nama_file, keterangan, lebar_cm=13.0, kecil=False):
     """Sisipkan screenshot asli (Google Colab / GitHub) beserta keterangan bernomor."""
     berkas = GAMBAR / nama_file
     if not berkas.exists():
@@ -375,12 +375,12 @@ def gambar(doc, nama_file, keterangan, lebar_cm=13.0):
     p.paragraph_format.keep_with_next = True
     p.paragraph_format.space_after = Pt(2)
     p.add_run().add_picture(str(berkas), width=Cm(lebar_cm))
-    k = paragraf(doc, "", 10, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=8)
+    k = paragraf(doc, "", 10, rata=WD_ALIGN_PARAGRAPH.CENTER, sesudah=4 if kecil else 8)
     tambah_teks(k, f"Gambar {_nomor_gambar[0]}. ", 10, tebal=True)
     tambah_teks(k, keterangan, 10, miring=True)
 
 
-def gambar_grid(doc, daftar, lebar_cm=6.4):
+def gambar_grid(doc, daftar, lebar_cm=5.4):
     """Susun beberapa screenshot dalam tabel 2 kolom tanpa garis; tiap sel = gambar + keterangan."""
     baris = [daftar[i:i + 2] for i in range(0, len(daftar), 2)]
     t = doc.add_table(rows=len(baris), cols=2)
@@ -457,12 +457,12 @@ def bab_pendahuluan(doc):
     judul(doc, "1. Pendahuluan")
     judul(doc, "1.1 Latar Belakang", 2)
     paragraf(doc, "Library adalah kumpulan fungsi siap pakai yang ditulis sekali lalu dipanggil dari program "
-                  "lain dengan import. Python menyediakan library bawaan (math, functools, itertools), library "
-                  "pihak ketiga (numpy, pandas, requests), dan memungkinkan kita membuat library sendiri berupa "
-                  "file .py yang di-import dari file lain. Ketiganya dipakai dengan cara yang sama: import, "
-                  "lalu panggil fungsinya.")
-    paragraf(doc, "Tugas ini meminta kelompok membuat satu library sendiri, `fplib.py`, berisi kumpulan fungsi "
-                  "umum yang ditulis dengan gaya fungsional, lalu memakainya di lima aplikasi: Kasir Kantin, "
+                  "lain melalui pernyataan `import`. Python memiliki library bawaan (`math`, `functools`, `itertools`), dapat memakai library "
+                  "pihak ketiga (`numpy`, `pandas`, `requests`), dan juga memungkinkan pemrogram membuat library "
+                  "sendiri berupa berkas `.py` yang diimpor dari berkas lain [8]. Ketiganya dipakai dengan cara "
+                  "yang sama: diimpor, lalu fungsinya dipanggil.")
+    paragraf(doc, "Tugas ini meminta kelompok membuat satu library sendiri, `fplib.py`, yang berisi fungsi-fungsi "
+                  "umum bergaya fungsional, lalu memakainya di lima aplikasi: Kasir Kantin, "
                   "Presensi Kelas, Perpustakaan Mini, Keuangan Pribadi, dan Nilai Mahasiswa. Setiap fungsi "
                   "wajib dipakai oleh minimal tiga dari lima aplikasi.")
     judul(doc, "1.2 Tujuan", 2)
@@ -470,51 +470,57 @@ def bab_pendahuluan(doc):
               "komposisi) dalam sebuah library yang dapat dipakai ulang.",
               "Membuktikan bahwa satu fungsi yang sama dapat melayani kebutuhan berbeda di beberapa aplikasi "
               "hanya dengan mengganti fungsi yang dikirim sebagai argumen.",
-              "Menguji library dan aplikasi secara otomatis dengan pytest.",
-              "Menerapkan kebiasaan baik memakai library: lingkungan terpisah, pencatatan versi, dan import eksplisit."):
+              "Menguji library dan aplikasi secara otomatis dengan pytest [7].",
+              "Menerapkan kebiasaan baik dalam memakai library: lingkungan terpisah, pencatatan versi, dan impor eksplisit."):
         poin(doc, t)
     judul(doc, "1.3 Konsep Fungsional yang Diterapkan", 2)
     tabel(doc, ["Konsep", "Penerapan di fplib"], [
-        ("Fungsi murni", "Tidak ada fungsi yang mengubah data masukan; memakai `sorted`, `{**dict}`, "
-                         "`list + [x]`, bukan `.sort()` / `.append()`."),
-        ("Fungsi tingkat tinggi", "Fungsi menerima fungsi (mis. lambda) dan mengembalikan fungsi baru."),
-        ("Closure", "Fungsi yang dikembalikan mengingat aturan yang diberikan, mis. `f` di dalam `jumlahkan`."),
-        ("Komposisi", "`pipe(f, g, h)` merangkai fungsi menjadi satu alur pemrosesan."),
-        ("Map / filter / reduce", "Dipakai di `ambil`, `saring`, `cari`, `validasi`, `pipe`, `kelompokkan`."),
+        ("Fungsi murni", "Tidak ada fungsi yang mengubah data masukan. Hasil selalu dibuat baru, misalnya "
+                         "dengan `sorted` dan dict baru, bukan dengan `.sort()` atau `.append()`."),
+        ("Fungsi tingkat tinggi", "Fungsi menerima fungsi lain (misalnya lambda) dan mengembalikan fungsi baru [1]."),
+        ("Closure", "Fungsi `hitung` di dalam `rata_rata` tetap mengingat fungsi `f` yang dibuat dari aturan, "
+                    "walaupun `rata_rata` sudah selesai dijalankan."),
+        ("Komposisi", "`pipe(f, g, h)` merangkai beberapa fungsi menjadi satu alur pemrosesan."),
+        ("Map, filter, reduce", "`map` dipakai di `ambil`, `jumlahkan`, `rata_rata`, dan `validasi`; `filter` di `saring`, "
+                                "`cari`, dan `validasi`; `reduce` di `pipe` dan `kelompokkan` [2]."),
     ], [4.0, 12.0])
-    paragraf(doc, "Pola pemakaian seluruh fungsi (kecuali `rupiah`) adalah `fungsi(aturan)(data)`. Karena "
-                  "semua hasilnya berbentuk fungsi yang menerima data, fungsi-fungsi tersebut dapat dirangkai "
-                  "dengan `pipe`.")
+    paragraf(doc, "Seluruh fungsi kecuali `rupiah` dipakai dengan pola `fungsi(aturan)(data)`. Pemanggilan pertama "
+                  "menerima aturan dan menghasilkan fungsi baru yang menunggu data. Karena itu, fungsi-fungsi "
+                  "tersebut dapat dirangkai dengan `pipe`.")
 
 
 def bab_struktur(doc):
     judul(doc, "2. Struktur Repositori dan Cara Menjalankan")
     paragraf(doc, f"Repositori: {IDENTITAS['repo']}")
-    paragraf(doc, "Repositori berisi `fplib.py`, `test_fplib.py`, lima file aplikasi, README (daftar fungsi dan "
-                  "cara pakai), `MATRIKS.md` beserta pemindainya `tools/matriks.py`, dan `requirements.txt`. "
-                  "Cara menjalankannya:")
-    blok_kode(doc, "python -m venv venv\n"
-                   "venv\\Scripts\\activate            # Linux/macOS: source venv/bin/activate\n"
-                   "pip install -r requirements.txt\n\n"
-                   "python kasir_kantin.py           # jalankan tiap aplikasi (data contoh)\n"
-                   "python kasir_kantin.py --interaktif   # data diketik sendiri\n"
-                   "pytest -v                        # jalankan pengujian\n"
-                   "python tools/matriks.py --cek    # cek aturan minimal 3 aplikasi")
+    paragraf(doc, "Repositori antara lain berisi `fplib.py`, `test_fplib.py`, lima berkas aplikasi, README (daftar fungsi "
+                  "dan cara pakai), `MATRIKS.md` beserta pemindainya `tools/matriks.py`, dan `requirements.txt`. "
+                  "Perintah untuk menjalankannya dirangkum pada tabel berikut [6].", sesudah=4)
+    tabel(doc, ["Perintah", "Kegunaan"], [
+        ("`python -m venv venv`", "Membuat lingkungan virtual khusus proyek."),
+        ("`venv\\Scripts\\activate`", "Mengaktifkan lingkungan di Windows (Linux/macOS: `source venv/bin/activate`)."),
+        ("`pip install -r requirements.txt`", "Memasang library sesuai versi yang dicatat."),
+        ("`python kasir_kantin.py`", "Menjalankan aplikasi dengan data contoh (berlaku untuk kelima aplikasi)."),
+        ("`python kasir_kantin.py --interaktif`", "Menjalankan aplikasi dengan data yang diketik pengguna."),
+        ("`pytest -v`", "Menjalankan seluruh pengujian."),
+        ("`python tools/matriks.py --cek`", "Memeriksa aturan minimal tiga aplikasi per fungsi."),
+    ], [6.2, 7.8], ukuran=11)
     paragraf(doc, "Seluruh program juga dijalankan di Google Colab langsung dari repositori GitHub. "
-                  "Gambar pada bab 4 dan bab 7 adalah tangkapan layar asli dari notebook tersebut.")
+                  "Gambar kode pada bab 3 serta gambar keluaran pada bab 4 dan bab 7 adalah tangkapan layar "
+                  "asli dari notebook tersebut.")
 
 
 def bab_fungsi(doc, sumber, data_matriks):
     daftar, hasil = data_matriks
     judul(doc, "3. Penjelasan Tiap Fungsi Library")
-    paragraf(doc, "Parameter `kunci`/`nilai` boleh berupa nama kolom (mis. `\"nilai\"`) atau fungsi. "
-                  "Nama kolom diubah menjadi fungsi oleh pembantu internal `_ke_fungsi` "
-                  f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Potongan kode di "
-                  "bawah adalah baris inti (definisi dan return) yang diambil langsung dari fplib.py beserta "
-                  "nomor barisnya; kode lengkap ada di repositori.")
+    paragraf(doc, "Parameter `kunci` dan `nilai` boleh berupa nama kolom, misalnya `\"nilai\"`, atau sebuah "
+                  "fungsi. Nama kolom diubah menjadi fungsi oleh fungsi pembantu internal `_ke_fungsi` "
+                  f"(fplib.py baris {sumber['_ke_fungsi'][0]}–{sumber['_ke_fungsi'][1]}). Setiap gambar kode "
+                  "di bawah diambil dari editor Google Colab dengan docstring dilipat, sehingga yang tampak "
+                  "hanya baris inti beserta nomor baris aslinya. Isi docstring, termasuk contoh pemakaiannya, "
+                  "dapat dibaca di repositori.")
     for i, f in enumerate(daftar, start=1):
-        awal, akhir, kode = sumber[f]
-        kegunaan, cara, contoh = PENJELASAN[f]
+        awal, akhir, _ = sumber[f]
+        kegunaan, cara = PENJELASAN[f]
         judul(doc, f"3.{i} {f} (fplib.py baris {awal}–{akhir})", 2)
         p = paragraf(doc, sesudah=3)
         tambah_teks(p, "Kegunaan: ", tebal=True)
@@ -522,21 +528,19 @@ def bab_fungsi(doc, sumber, data_matriks):
         p = paragraf(doc, sesudah=3)
         tambah_teks(p, "Cara kerja: ", tebal=True)
         tambah_teks(p, cara)
-        blok_kode(doc, kode)
-        p = paragraf(doc, sesudah=3, rata=WD_ALIGN_PARAGRAPH.LEFT)
-        tambah_teks(p, "Contoh: ", tebal=True)
-        tambah_teks(p, f"`{contoh}`")
-        p = paragraf(doc, sesudah=8, rata=WD_ALIGN_PARAGRAPH.LEFT)
+        gambar(doc, f"kode_{f}.png", f"Kode `{f}` di editor Google Colab (docstring dilipat)",
+               LEBAR_GAMBAR_KODE, kecil=True)
+        p = paragraf(doc, sesudah=8)
         tambah_teks(p, "Dipakai di: ", tebal=True)
-        tambah_teks(p, f"{len(hasil[f])} aplikasi ({', '.join(hasil[f])}); rincian baris di bab 6.")
+        tambah_teks(p, f"{len(hasil[f])} aplikasi ({', '.join(hasil[f])}); rincian baris ada di bab 6.")
 
 
 def bab_aplikasi(doc, data_matriks):
     daftar, hasil = data_matriks
     judul(doc, "4. Lima Aplikasi")
-    paragraf(doc, "Setiap aplikasi punya dua mode: tanpa argumen memakai data contoh (dipakai untuk demo), "
-                  "dan `--interaktif` menerima data yang diketik pengguna. Kedua mode memakai fungsi logika yang "
-                  "sama karena `main` menerima data sebagai argumen.")
+    paragraf(doc, "Setiap aplikasi memiliki dua mode. Tanpa argumen, aplikasi memakai data contoh (dipakai saat "
+                  "demo); dengan `--interaktif`, aplikasi menerima data yang diketik pengguna. Kedua mode memakai "
+                  "fungsi logika yang sama karena `main` menerima data sebagai argumen.")
     for i, (label, (nama, berkas, uraian)) in enumerate(APLIKASI_INFO.items(), start=1):
         dipakai = [f for f in daftar if label in hasil[f]]
         judul(doc, f"4.{i} {nama} ({berkas})", 2)
@@ -549,15 +553,15 @@ def bab_aplikasi(doc, data_matriks):
 
 def bab_bukti_jalan(doc):
     judul(doc, "4.6 Hasil Menjalankan di Google Colab", 2)
-    paragraf(doc, "Tangkapan layar asli dari notebook Google Colab yang meng-clone repositori GitHub "
-                  "lalu menjalankan setiap aplikasi.", sesudah=4)
+    paragraf(doc, "Gambar berikut adalah tangkapan layar asli dari notebook Google Colab yang mengambil "
+                  "(clone) repositori GitHub, lalu menjalankan setiap aplikasi.", sesudah=4)
     gambar_grid(doc, [
-        (GAMBAR_APLIKASI["Kasir"], "kasir_kantin.py"),
-        (GAMBAR_APLIKASI["Presensi"], "presensi_kelas.py"),
-        (GAMBAR_APLIKASI["Perpus"], "perpustakaan_mini.py"),
-        (GAMBAR_APLIKASI["Keuangan"], "keuangan_pribadi.py"),
-        (GAMBAR_APLIKASI["Nilai"], "nilai_mahasiswa.py"),
-        ("10_mode_interaktif.png", "kasir_kantin.py --interaktif (X99 ditolak validasi)"),
+        (GAMBAR_APLIKASI["Kasir"], "Keluaran `kasir_kantin.py`"),
+        (GAMBAR_APLIKASI["Presensi"], "Keluaran `presensi_kelas.py`"),
+        (GAMBAR_APLIKASI["Perpus"], "Keluaran `perpustakaan_mini.py`"),
+        (GAMBAR_APLIKASI["Keuangan"], "Keluaran `keuangan_pribadi.py`"),
+        (GAMBAR_APLIKASI["Nilai"], "Keluaran `nilai_mahasiswa.py`"),
+        ("10_mode_interaktif.png", "Mode `--interaktif`: kode X99 ditolak `validasi`"),
     ])
 
 
@@ -565,13 +569,13 @@ def bab_matriks(doc, data_matriks):
     daftar, hasil = data_matriks
     label = [a[0] for a in matriks.APLIKASI]
     judul(doc, "5. Matriks Fungsi × Aplikasi")
-    paragraf(doc, "Matriks berikut dibuat otomatis oleh `tools/matriks.py`, yang membaca kode kelima aplikasi "
-                  "dengan modul `ast` (tanpa menjalankannya) dan mencatat setiap pemakaian fungsi fplib.")
+    paragraf(doc, "Matriks berikut dibuat otomatis oleh `tools/matriks.py`. Program ini membaca kode kelima "
+                  "aplikasi dengan modul `ast` tanpa menjalankannya [5], lalu mencatat setiap pemakaian fungsi fplib.").paragraph_format.keep_with_next = True
     tabel(doc, ["Fungsi"] + label + ["Jumlah"],
           [[f"`{f}`"] + ["✓" if l in hasil[f] else "" for l in label] + [len(hasil[f])] for f in daftar],
           [3.4, 1.9, 2.1, 1.9, 2.3, 1.9, 2.0], ukuran=10, rata_tengah=(1, 2, 3, 4, 5, 6), utuh=True)
     jumlah = [sum(1 for f in daftar if l in hasil[f]) for l in label]
-    paragraf(doc, "Setiap baris memiliki minimal 3 centang, sesuai ketentuan tugas dan matriks pada slide. "
+    paragraf(doc, "Setiap baris memiliki minimal tiga centang dan isinya sama dengan matriks pada slide. "
                   "Jumlah fungsi yang dipakai per aplikasi: "
                   + ", ".join(f"{l} {j}" for l, j in zip(label, jumlah))
                   + f" (total {sum(jumlah)} pemakaian).")
@@ -579,10 +583,10 @@ def bab_matriks(doc, data_matriks):
 
 def bab_bukti(doc, data_matriks):
     daftar, hasil = data_matriks
-    judul(doc, "6. Bukti: File dan Baris Pemanggilan")
-    paragraf(doc, "Tabel berikut mencantumkan setiap fungsi, nama file pemanggilnya, dan nomor baris "
-                  "tempat fungsi itu dipanggil. Nomor baris ini dapat diklik di MATRIKS.md pada "
-                  "repositori GitHub untuk langsung melompat ke kodenya.")
+    judul(doc, "6. Bukti: Berkas dan Baris Pemanggilan")
+    paragraf(doc, "Tabel berikut mencantumkan setiap fungsi, berkas yang memanggilnya, dan nomor baris "
+                  "pemanggilannya. Di `MATRIKS.md` pada repositori GitHub, nomor baris ini berupa tautan yang "
+                  "langsung membuka baris kode tersebut.")
     isi = [
         (f"`{f}`", "; ".join(
             f"`{hasil[f][l]['file']}` baris {', '.join(map(str, hasil[f][l]['baris']))}"
@@ -590,52 +594,54 @@ def bab_bukti(doc, data_matriks):
         ))
         for f in daftar
     ]
-    tabel(doc, ["Fungsi", "File pemanggil dan nomor baris"], isi, [2.4, 11.6], ukuran=9)
+    tabel(doc, ["Fungsi", "Berkas pemanggil dan nomor baris"], isi, [2.4, 11.6], ukuran=9)
 
 
 def bab_pengujian(doc):
     ringkas, lulus, gagal = hasil_pytest()
     judul(doc, "7. Pengujian")
-    paragraf(doc, f"Pengujian dijalankan dengan `pytest -v`. Hasil saat laporan ini dibuat: {ringkas} "
-                  f"({lulus} lulus, {gagal} gagal).")
+    paragraf(doc, f"Pengujian dijalankan dengan `pytest -v` [7]. Saat laporan ini dibuat, {lulus} pengujian "
+                  f"lulus dan {gagal} gagal.")
     tabel(doc, ["Kelompok pengujian", "Yang diperiksa"], [
-        ("Per fungsi library", "Kasus normal dan kasus tepi tiap fungsi: data kosong, tidak ketemu, "
-                               "kolom hilang, nilai negatif, pembulatan Rupiah."),
+        ("Per fungsi library", "Kasus normal dan kasus tepi tiap fungsi: data kosong, data tidak ditemukan, "
+                               "kolom hilang, nilai negatif, dan pembulatan rupiah."),
         ("Contoh dari slide", "Tiga pemakaian `jumlahkan` (total belanja, total pengeluaran, nilai akhir berbobot)."),
-        ("Sifat fungsional", "Data asli tidak berubah setelah diproses; hasil sama jika dipanggil berulang."),
-        ("Docstring", "Seluruh contoh `>>>` di docstring fplib dijalankan (doctest)."),
-        ("Aturan tugas", "Setiap fungsi dipakai minimal 3 aplikasi dan sama dengan matriks di slide; "
-                         "tidak ada `import *`."),
-        ("Aplikasi", "Kelima aplikasi berjalan tanpa error dan angka kuncinya benar."),
-        ("Mode interaktif", "Input pengguna disimulasikan; input salah ditolak `validasi`, input terputus tidak crash."),
+        ("Sifat fungsional", "Data asli tidak berubah setelah diproses, dan hasilnya tetap sama jika dipanggil berulang."),
+        ("Docstring", "Seluruh contoh di docstring fplib dijalankan dengan doctest."),
+        ("Aturan tugas", "Setiap fungsi dipakai oleh minimal tiga aplikasi dan sesuai dengan matriks di slide; "
+                         "tidak ada impor bintang (impor semua nama sekaligus)."),
+        ("Aplikasi", "Kelima aplikasi berjalan tanpa galat dan angka utamanya benar."),
+        ("Mode interaktif", "Masukan pengguna disimulasikan; masukan salah ditolak `validasi`, dan masukan yang terhenti (EOF) "
+                            "tidak membuat program berhenti mendadak."),
     ], [4.5, 11.5])
     gambar(doc, "09_pytest_hasil_matriks.png",
-           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 8.0)
+           f"Keluaran akhir `pytest` ({lulus} passed) dan `tools/matriks.py --cek`", 6.0)
 
 
 def bab_penutup(doc):
     judul(doc, "8. Penerapan Kebiasaan Baik")
-    for t in ("Lingkungan terpisah per proyek dengan `python -m venv venv`.",
-              "Versi pustaka dicatat dengan `pip freeze > requirements.txt` agar semua anggota memakai versi sama.",
-              "Import di bagian atas file dan hanya yang dibutuhkan, mis. `from fplib import pipe, saring`. "
-              "Tidak ada `import *`, dan hal ini dicek otomatis.",
-              "Tidak mengubah kode di dalam library pihak ketiga.",
-              "Memakai fungsi yang sudah ada (`map`, `filter`, `sorted`, `sum`, `functools.reduce`) "
-              "daripada menulis ulang perulangan sendiri.",
-              "Setiap fungsi memiliki docstring sehingga bisa dibaca dengan `help(fplib.jumlahkan)`."):
+    for t in ("Proyek ini memakai lingkungan terpisah yang dibuat dengan `python -m venv venv` [6].",
+              "Versi library dicatat dengan `pip freeze > requirements.txt` agar semua anggota memakai versi yang sama.",
+              "Impor ditulis di bagian atas berkas dan hanya untuk nama yang dibutuhkan, misalnya "
+              "`from fplib import pipe, saring`. Impor bintang tidak dipakai, dan hal ini diperiksa otomatis.",
+              "Fungsi yang sudah tersedia (`map`, `filter`, `sorted`, `sum`, `functools.reduce`) dipakai "
+              "alih-alih menulis ulang perulangan sendiri [3].",
+              "Setiap fungsi memiliki docstring sehingga penjelasannya dapat dibaca dengan `help(fplib.jumlahkan)`."):
         poin(doc, t)
     judul(doc, "9. Kesimpulan")
-    paragraf(doc, "Kelompok berhasil membangun library `fplib.py` berisi sepuluh fungsi bergaya fungsional "
-                  "yang dipakai oleh lima aplikasi, dan setiap fungsi dipakai oleh minimal tiga aplikasi sesuai "
+    paragraf(doc, "Kelompok telah membangun library `fplib.py` yang berisi sepuluh fungsi bergaya fungsional "
+                  "dan dipakai oleh lima aplikasi; setiap fungsi dipakai oleh minimal tiga aplikasi sesuai "
                   "matriks. Pola `fungsi(aturan)(data)` membuat satu fungsi dapat melayani kebutuhan berbeda: "
                   "`jumlahkan` yang sama menghitung total belanja, total pengeluaran, dan nilai akhir berbobot. "
-                  "Seluruh fungsi murni, terdokumentasi, dan teruji otomatis dengan pytest. Bukti pemakaian "
-                  "berupa file dan nomor baris dihasilkan langsung dari kode sehingga selalu sesuai dengan repositori.")
+                  "Seluruh fungsi bersifat murni, terdokumentasi, dan teruji otomatis dengan pytest. Bukti pemakaian "
+                  "berupa berkas dan nomor baris dihasilkan langsung dari kode oleh `tools/matriks.py` sehingga sesuai "
+                  "dengan isi repositori saat laporan ini dibuat.")
     judul(doc, "Daftar Pustaka")
     for i, t in enumerate(PUSTAKA, start=1):
-        p = paragraf(doc, f"[{i}] {t}", 10, rata=WD_ALIGN_PARAGRAPH.LEFT, sesudah=3)
+        p = paragraf(doc, f"[{i}] {t}", 10, rata=WD_ALIGN_PARAGRAPH.LEFT, sesudah=1)
         p.paragraph_format.left_indent = Cm(0.8)
         p.paragraph_format.first_line_indent = Cm(-0.8)
+        p.paragraph_format.line_spacing = 1.0
 
 
 def main():
