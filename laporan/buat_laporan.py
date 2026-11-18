@@ -464,7 +464,8 @@ def bab_struktur(doc):
     blok_kode(doc, "python -m venv venv\n"
                    "venv\\Scripts\\activate            # Linux/macOS: source venv/bin/activate\n"
                    "pip install -r requirements.txt\n\n"
-                   "python kasir_kantin.py           # jalankan tiap aplikasi\n"
+                   "python kasir_kantin.py           # jalankan tiap aplikasi (data contoh)\n"
+                   "python kasir_kantin.py --interaktif   # data diketik sendiri\n"
                    "pytest -v                        # jalankan pengujian\n"
                    "python tools/matriks.py --cek    # cek aturan minimal 3 aplikasi")
     paragraf(doc, "Seluruh program juga dijalankan di Google Colab langsung dari repositori GitHub. "
@@ -502,6 +503,9 @@ def bab_fungsi(doc, sumber, data_matriks):
 def bab_aplikasi(doc, data_matriks):
     daftar, hasil = data_matriks
     judul(doc, "4. Lima Aplikasi")
+    paragraf(doc, "Setiap aplikasi punya dua mode: tanpa argumen memakai data contoh (dipakai untuk demo), "
+                  "dan `--interaktif` menerima data yang diketik pengguna. Kedua mode memakai fungsi logika yang "
+                  "sama karena `main` menerima data sebagai argumen.")
     for i, (label, (nama, berkas, uraian)) in enumerate(APLIKASI_INFO.items(), start=1):
         dipakai = [f for f in daftar if label in hasil[f]]
         judul(doc, f"4.{i} {nama} ({berkas})", 2)
@@ -558,10 +562,11 @@ def bab_pengujian(doc):
         ("Aturan tugas", "Setiap fungsi dipakai minimal 3 aplikasi dan sama dengan matriks di slide; "
                          "tidak ada `import *`."),
         ("Aplikasi", "Kelima aplikasi berjalan tanpa error dan angka kuncinya benar."),
+        ("Mode interaktif", "Input pengguna disimulasikan; input salah ditolak `validasi`, input terputus tidak crash."),
     ], [4.5, 11.5])
-    gambar(doc, "08_pytest_awal.png", "Awal keluaran pytest -v di Google Colab (56 pengujian terkumpul).", 10.0)
+    gambar(doc, "08_pytest_awal.png", "Awal keluaran pytest -v di Google Colab (62 pengujian terkumpul).", 10.0)
     gambar(doc, "09_pytest_hasil_matriks.png",
-           "Akhir keluaran pytest (56 passed) dan hasil tools/matriks.py --cek.", 10.0)
+           "Akhir keluaran pytest (62 passed) dan hasil tools/matriks.py --cek.", 10.0)
 
 
 def bab_penutup(doc):

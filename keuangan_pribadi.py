@@ -5,8 +5,11 @@ Pemasukan, pengeluaran, dan kategori.
 Fungsi fplib yang dipakai: pipe, ambil, saring, urutkan, kelompokkan,
 jumlahkan, rata_rata, validasi, rupiah.
 
-Jalankan:  python keuangan_pribadi.py
+Jalankan:  python keuangan_pribadi.py               (data contoh)
+           python keuangan_pribadi.py --interaktif  (tambah transaksi sendiri)
 """
+
+import sys
 
 from fplib import pipe, ambil, saring, urutkan, kelompokkan, jumlahkan, rata_rata, validasi, rupiah
 
@@ -78,12 +81,12 @@ def ringkasan(transaksi):
 # ---------------------------------------------------------------------------
 # Tampilan
 # ---------------------------------------------------------------------------
-def main():
+def main(transaksi=TRANSAKSI):
     print("=" * 58)
     print(" KEUANGAN PRIBADI — NOVEMBER 2026".center(58))
     print("=" * 58)
 
-    salah = transaksi_salah(TRANSAKSI)
+    salah = transaksi_salah(transaksi)
     if salah:
         print("\nTRANSAKSI DIABAIKAN (tidak valid)")
         print("\n".join(ambil(
@@ -93,7 +96,7 @@ def main():
             )
         )(salah)))
 
-    valid = transaksi_valid(TRANSAKSI)
+    valid = transaksi_valid(transaksi)
     print("\nRIWAYAT TRANSAKSI (terbaru dulu)")
     print("\n".join(ambil(
         lambda t: (
@@ -119,5 +122,36 @@ def main():
     print("=" * 58)
 
 
+def tanya(pesan):
+    """Baca satu baris dari pengguna; akhir input (Ctrl+D / Ctrl+Z) dianggap baris kosong."""
+    try:
+        return input(pesan).strip()
+    except EOFError:
+        return ""
+
+
+def ke_transaksi(teks):
+    """'2026-11-18 keluar Makan siang 15000' -> dict transaksi; nominal bukan angka menjadi 0."""
+    bagian = teks.split()
+    nominal = bagian[-1] if len(bagian) >= 4 else ""
+    return {
+        "tanggal": bagian[0],
+        "jenis": bagian[1].lower() if len(bagian) > 1 else "",
+        "kategori": " ".join(bagian[2:-1]),
+        "nominal": int(nominal) if nominal.isdigit() else 0,
+    }
+
+
+def main_interaktif():
+    print("Format: tanggal jenis kategori nominal, mis. 2026-11-18 keluar Makan 15000")
+    baris = []
+    while teks := tanya("Transaksi baru (Enter kosong = selesai): "):
+        baris.append(ke_transaksi(teks))
+    main(TRANSAKSI + tuple(baris))
+
+
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()

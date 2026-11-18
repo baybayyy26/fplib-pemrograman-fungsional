@@ -5,9 +5,11 @@ Katalog, peminjaman, dan denda.
 Fungsi fplib yang dipakai: pipe, ambil, saring, cari, urutkan,
 kelompokkan, validasi, rupiah.
 
-Jalankan:  python perpustakaan_mini.py
+Jalankan:  python perpustakaan_mini.py               (data contoh)
+           python perpustakaan_mini.py --interaktif  (ajukan pinjaman sendiri)
 """
 
+import sys
 from datetime import date
 
 from fplib import pipe, ambil, saring, cari, urutkan, kelompokkan, validasi, rupiah
@@ -106,7 +108,7 @@ cek_permintaan = validasi(
 # ---------------------------------------------------------------------------
 # Tampilan
 # ---------------------------------------------------------------------------
-def main():
+def main(permintaan=PERMINTAAN_BARU):
     print("=" * 62)
     print(" PERPUSTAKAAN MINI".center(62))
     print(f" Tanggal acuan: {HARI_INI:%d-%m-%Y}".center(62))
@@ -138,9 +140,34 @@ def main():
             "DISETUJUI" if not cek_permintaan(r)
             else "DITOLAK - " + ", ".join(cek_permintaan(r))
         )
-    )(PERMINTAAN_BARU)))
+    )(permintaan)))
     print("=" * 62)
 
 
+def tanya(pesan):
+    """Baca satu baris dari pengguna; akhir input (Ctrl+D / Ctrl+Z) dianggap baris kosong."""
+    try:
+        return input(pesan).strip()
+    except EOFError:
+        return ""
+
+
+def ke_permintaan(teks):
+    """'B05 Fajar' -> {"kode": "B05", "peminjam": "Fajar"}."""
+    kode, _, nama = teks.partition(" ")
+    return {"kode": kode.upper(), "peminjam": nama}
+
+
+def main_interaktif():
+    print("Kode buku: " + ", ".join(ambil(lambda b: f"{b['kode']} {b['judul']}")(KATALOG)))
+    baris = []
+    while teks := tanya("Pinjam (kode nama, mis. B05 Fajar; Enter kosong = selesai): "):
+        baris.append(ke_permintaan(teks))
+    main(tuple(baris))
+
+
 if __name__ == "__main__":
-    main()
+    if "--interaktif" in sys.argv:
+        main_interaktif()
+    else:
+        main()

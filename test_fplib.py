@@ -310,3 +310,65 @@ def test_nilai_peringkat():
     assert ambil("nama")(peringkat)[0] == "Citra"
     assert len(peringkat) == 5  # Fajar ditolak validasi
     assert n.huruf_dari(80.0) == "A"
+
+
+# ---------------------------------------------------------------------------
+# Mode interaktif (python <aplikasi>.py --interaktif): input pengguna disimulasikan
+# ---------------------------------------------------------------------------
+def _isi_input(monkeypatch, *baris):
+    jawaban = iter(baris)
+    monkeypatch.setattr("builtins.input", lambda pesan="": next(jawaban))
+
+
+def test_kasir_interaktif(monkeypatch, capsys):
+    import kasir_kantin as k
+
+    _isi_input(monkeypatch, "M01 2", "X99 1", "", "30000")
+    k.main_interaktif()
+    keluar = capsys.readouterr().out
+    assert "Rp24.000" in keluar and "kode menu tidak ditemukan" in keluar and "Rp6.000" in keluar
+
+
+def test_presensi_interaktif(monkeypatch, capsys):
+    import presensi_kelas as p
+
+    _isi_input(monkeypatch, "H", "A", "", "s", "H")
+    p.main_interaktif()
+    assert "Pertemuan 9" in capsys.readouterr().out
+
+
+def test_perpustakaan_interaktif(monkeypatch, capsys):
+    import perpustakaan_mini as p
+
+    _isi_input(monkeypatch, "B05 Fajar", "B01", "")
+    p.main_interaktif()
+    keluar = capsys.readouterr().out
+    assert "DISETUJUI" in keluar and "nama peminjam kosong" in keluar
+
+
+def test_keuangan_interaktif(monkeypatch, capsys):
+    import keuangan_pribadi as k
+
+    _isi_input(monkeypatch, "2026-11-18 keluar Makan 15000", "")
+    k.main_interaktif()
+    assert "Rp327.000" in capsys.readouterr().out  # 312.000 + 15.000
+
+
+def test_nilai_interaktif(monkeypatch, capsys):
+    import nilai_mahasiswa as n
+
+    _isi_input(monkeypatch, "202410370110007 Gita 80 75 88", "202410370110008 Hadi 90 x", "")
+    n.main_interaktif()
+    keluar = capsys.readouterr().out
+    assert "Gita" in keluar and "81.70" in keluar and "Hadi: ada nilai di luar rentang" in keluar
+
+
+def test_input_berakhir_tiba_tiba_tidak_crash(monkeypatch, capsys):
+    import kasir_kantin as k
+
+    def habis(pesan=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", habis)
+    k.main_interaktif()
+    assert "TOTAL" in capsys.readouterr().out
