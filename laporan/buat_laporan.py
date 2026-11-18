@@ -432,8 +432,7 @@ def sampul(doc):
     """Sampul format umum laporan UMM: judul, logo, penyusun, dosen, institusi, tahun."""
     tengah = WD_ALIGN_PARAGRAPH.CENTER
     paragraf(doc, "LAPORAN TUGAS", 14, tebal=True, rata=tengah, sesudah=0)
-    paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 14, tebal=True, rata=tengah, sesudah=0)
-    paragraf(doc, f"Kelas {IDENTITAS['kelas'].split()[-1]}", 12, rata=tengah, sesudah=18)
+    paragraf(doc, "PEMROGRAMAN FUNGSIONAL", 14, tebal=True, rata=tengah, sesudah=24)
     paragraf(doc, "Membangun Library Fungsional Sendiri:", 13, tebal=True, rata=tengah, sesudah=0)
     paragraf(doc, "fplib.py untuk Lima Aplikasi", 13, tebal=True, rata=tengah, sesudah=42)
 
@@ -516,7 +515,7 @@ def bab_fungsi(doc, sumber, data_matriks):
     for i, f in enumerate(daftar, start=1):
         awal, akhir, kode = sumber[f]
         kegunaan, cara, contoh = PENJELASAN[f]
-        judul(doc, f"3.{i} {f}  (fplib.py baris {awal}–{akhir})", 2)
+        judul(doc, f"3.{i} {f} (fplib.py baris {awal}–{akhir})", 2)
         p = paragraf(doc, sesudah=3)
         tambah_teks(p, "Kegunaan: ", tebal=True)
         tambah_teks(p, kegunaan)
@@ -524,10 +523,10 @@ def bab_fungsi(doc, sumber, data_matriks):
         tambah_teks(p, "Cara kerja: ", tebal=True)
         tambah_teks(p, cara)
         blok_kode(doc, kode)
-        p = paragraf(doc, sesudah=3)
+        p = paragraf(doc, sesudah=3, rata=WD_ALIGN_PARAGRAPH.LEFT)
         tambah_teks(p, "Contoh: ", tebal=True)
         tambah_teks(p, f"`{contoh}`")
-        p = paragraf(doc, sesudah=8)
+        p = paragraf(doc, sesudah=8, rata=WD_ALIGN_PARAGRAPH.LEFT)
         tambah_teks(p, "Dipakai di: ", tebal=True)
         tambah_teks(p, f"{len(hasil[f])} aplikasi ({', '.join(hasil[f])}); rincian baris di bab 6.")
 
@@ -570,7 +569,7 @@ def bab_matriks(doc, data_matriks):
                   "dengan modul `ast` (tanpa menjalankannya) dan mencatat setiap pemakaian fungsi fplib.")
     tabel(doc, ["Fungsi"] + label + ["Jumlah"],
           [[f"`{f}`"] + ["✓" if l in hasil[f] else "" for l in label] + [len(hasil[f])] for f in daftar],
-          [3.4, 1.9, 2.1, 1.9, 2.3, 1.9, 2.0], ukuran=10, rata_tengah=(1, 2, 3, 4, 5, 6))
+          [3.4, 1.9, 2.1, 1.9, 2.3, 1.9, 2.0], ukuran=10, rata_tengah=(1, 2, 3, 4, 5, 6), utuh=True)
     jumlah = [sum(1 for f in daftar if l in hasil[f]) for l in label]
     paragraf(doc, "Setiap baris memiliki minimal 3 centang, sesuai ketentuan tugas dan matriks pada slide. "
                   "Jumlah fungsi yang dipakai per aplikasi: "
